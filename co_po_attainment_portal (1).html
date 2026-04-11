@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CO-PO Attainment Portal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
+  :root {
+    --bg:#f4f6f9;--surface:#fff;--surface2:#f0f3f7;--border:#e2e8f0;
+    --text:#1a202c;--text2:#4a5568;--text3:#718096;
+    --accent:#2563eb;--accent-light:#eff6ff;--accent-dark:#1d4ed8;
+    --green:#16a34a;--green-light:#f0fdf4;
+    --amber:#d97706;--amber-light:#fffbeb;
+    --red:#dc2626;--red-light:#fef2f2;
+    --purple:#7c3aed;--purple-light:#f5f3ff;
+    --teal:#0d9488;--teal-light:#f0fdfa;
+    --radius:10px;
+    --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+    --shadow-md:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.05);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);}
+  .auth-card{background:#fff;border-radius:16px;padding:2.5rem;width:420px;box-shadow:var(--shadow-md);}
+  .auth-logo{text-align:center;margin-bottom:1.5rem;}
+  .auth-logo img{width:80px;height:80px;object-fit:contain;margin-bottom:.75rem;}
+  .auth-logo .inst-full{font-size:.78rem;color:#2563eb;font-weight:500;margin-top:4px;}
+  .auth-logo h1{font-family:'DM Serif Display',serif;font-size:1.6rem;color:#1e3a5f;}
+  .auth-logo p{font-size:.8rem;color:var(--text3);margin-top:4px;letter-spacing:.08em;text-transform:uppercase;}
+  .auth-tabs{display:flex;background:var(--surface2);border-radius:8px;padding:3px;margin-bottom:1.5rem;gap:2px;}
+  .auth-tab{flex:1;padding:.5rem;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--text3);font-weight:500;transition:all .15s;}
+  .auth-tab.active{background:#fff;color:var(--accent);box-shadow:var(--shadow);}
+  .form-group{margin-bottom:1rem;}
+  .form-group label{display:block;font-size:.8rem;font-weight:500;color:var(--text2);margin-bottom:.4rem;}
+  .form-group input,.form-group select,.form-group textarea{width:100%;padding:.65rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--text);outline:none;transition:border-color .15s;background:#fff;}
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent);}
+  .form-group textarea{resize:vertical;min-height:80px;}
+  .btn{padding:.65rem 1.2rem;border-radius:8px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;font-size:.88rem;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent-dark);}
+  .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+  .btn-secondary:hover{background:var(--border);}
+  .btn-success{background:var(--green);color:#fff;}
+  .btn-success:hover{background:#15803d;}
+  .btn-danger{background:var(--red);color:#fff;}
+  .btn-warning{background:var(--amber);color:#fff;}
+  .btn-full{width:100%;justify-content:center;}
+  .btn-sm{padding:.35rem .75rem;font-size:.8rem;}
+  .btn:disabled{opacity:.6;cursor:not-allowed;}
+  .layout{display:flex;min-height:100vh;}
+  .sidebar{width:240px;background:#1e3a5f;color:#fff;flex-shrink:0;display:flex;flex-direction:column;}
+  .sidebar-header{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid rgba(255,255,255,.1);}
+  .sidebar-header h2{font-family:'DM Serif Display',serif;font-size:1.1rem;line-height:1.3;}
+  .sidebar-header span{font-size:.72rem;opacity:.6;letter-spacing:.06em;text-transform:uppercase;}
+  .sidebar-user{padding:.75rem 1.25rem;background:rgba(255,255,255,.08);margin:.75rem;border-radius:8px;}
+  .sidebar-user .role-badge{font-size:.7rem;background:rgba(255,255,255,.15);padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em;}
+  .sidebar-user .name{font-size:.85rem;font-weight:500;margin-top:4px;}
+  .sidebar-nav{flex:1;padding:.5rem;overflow-y:auto;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:.6rem .9rem;border-radius:8px;cursor:pointer;font-size:.85rem;color:rgba(255,255,255,.7);transition:all .15s;margin-bottom:2px;border:none;background:transparent;width:100%;text-align:left;}
+  .nav-item:hover{background:rgba(255,255,255,.08);color:#fff;}
+  .nav-item.active{background:rgba(255,255,255,.15);color:#fff;}
+  .nav-icon{width:18px;height:18px;flex-shrink:0;}
+  .sidebar-footer{padding:.75rem;border-top:1px solid rgba(255,255,255,.1);}
+  .main{flex:1;overflow-y:auto;}
+  .inst-bar{background:#fff;border-bottom:2px solid #1e3a5f;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;}
+  .inst-bar img{width:44px;height:44px;object-fit:contain;}
+  .inst-bar-text{}
+  .inst-bar-text .inst-name{font-family:'DM Serif Display',serif;font-size:.95rem;color:#1e3a5f;font-weight:600;line-height:1.2;}
+  .inst-bar-text .inst-sub{font-size:.7rem;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;}
+  .main-header{background:#fff;border-bottom:1px solid var(--border);padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;}
+  .main-header h1{font-size:1.1rem;font-weight:600;}
+  .main-header h1{font-size:1.1rem;font-weight:600;}
+  .content{padding:1.5rem;}
+  .card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:1.25rem;}
+  .card-header{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;}
+  .card-header h3{font-size:.95rem;font-weight:600;}
+  .card-body{padding:1.25rem;}
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.5rem;}
+  .stat-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:1rem;box-shadow:var(--shadow);}
+  .stat-card .label{font-size:.75rem;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.05em;}
+  .stat-card .value{font-size:1.8rem;font-weight:600;margin-top:4px;}
+  .stat-card.blue .value{color:var(--accent);}
+  .stat-card.green .value{color:var(--green);}
+  .stat-card.purple .value{color:var(--purple);}
+  .stat-card.amber .value{color:var(--amber);}
+  table{width:100%;border-collapse:collapse;font-size:.85rem;}
+  th{padding:.6rem .9rem;text-align:left;font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border);}
+  td{padding:.7rem .9rem;border-bottom:1px solid var(--border);color:var(--text);}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:var(--surface2);}
+  .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:600;}
+  .badge-blue{background:var(--accent-light);color:var(--accent);}
+  .badge-green{background:var(--green-light);color:var(--green);}
+  .badge-amber{background:var(--amber-light);color:var(--amber);}
+  .badge-purple{background:var(--purple-light);color:var(--purple);}
+  .badge-red{background:var(--red-light);color:var(--red);}
+  .badge-teal{background:var(--teal-light);color:var(--teal);}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:1000;}
+  .modal{background:#fff;border-radius:14px;padding:1.75rem;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+  .modal h2{font-size:1.1rem;font-weight:600;margin-bottom:1.25rem;}
+  .modal-footer{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);}
+  .attainment-table input[type=number]{width:70px;padding:.35rem .5rem;border:1.5px solid var(--border);border-radius:6px;font-size:.85rem;text-align:center;font-family:'DM Sans',sans-serif;background:#fff;}
+  .attainment-table input[type=number]:focus{border-color:var(--accent);outline:none;}
+  .level-high{color:var(--green);font-weight:600;}
+  .level-mid{color:var(--amber);font-weight:600;}
+  .level-low{color:var(--red);font-weight:600;}
+  .co-po-table{overflow-x:auto;}
+  .co-po-table table{min-width:700px;}
+  .co-po-cell input{width:45px;padding:.25rem;border:1.5px solid var(--border);border-radius:4px;text-align:center;font-size:.82rem;font-family:'DM Sans',sans-serif;background:#fff;}
+  .co-po-cell input:focus{border-color:var(--accent);outline:none;}
+  .alert{padding:.75rem 1rem;border-radius:8px;font-size:.85rem;margin-bottom:1rem;}
+  .alert-error{background:var(--red-light);color:var(--red);border:1px solid #fecaca;}
+  .alert-success{background:var(--green-light);color:var(--green);border:1px solid #bbf7d0;}
+  .alert-info{background:var(--accent-light);color:var(--accent);border:1px solid #bfdbfe;}
+  .empty-state{text-align:center;padding:3rem 1rem;color:var(--text3);}
+  .flex{display:flex;}
+  .flex-between{display:flex;align-items:center;justify-content:space-between;}
+  .gap-2{gap:.5rem;}
+  .text-sm{font-size:.82rem;}
+  .text-muted{color:var(--text3);}
+  .mb-1{margin-bottom:.5rem;}
+  .mb-2{margin-bottom:1rem;}
+  .tag{display:inline-flex;align-items:center;background:var(--surface2);color:var(--text2);border-radius:6px;padding:2px 8px;font-size:.78rem;border:1px solid var(--border);}
+  .drop-zone{border:2px dashed var(--border);border-radius:10px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;}
+  .drop-zone:hover,.drop-zone.over{border-color:var(--accent);background:var(--accent-light);}
+  .tab-strip{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.25rem;}
+  .tab-btn{padding:.6rem 1.1rem;border:none;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500;}
+  .import-preview{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;font-size:.78rem;font-family:monospace;padding:.75rem;background:#f8fafc;white-space:pre-wrap;color:var(--text2);}
+  .export-option{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border:1px solid var(--border);border-radius:8px;background:var(--surface2);margin-bottom:.75rem;}
+  .export-option .label{font-size:.88rem;font-weight:500;}
+  .export-option .desc{font-size:.78rem;color:var(--text3);margin-top:2px;}
+  /* Responsive */
+  @media(max-width:768px){
+    .sidebar{width:200px;}
+    .stats-grid{grid-template-columns:repeat(2,1fr);}
+  }
+  @media(max-width:600px){
+    .layout{flex-direction:column;}
+    .sidebar{width:100%;flex-direction:row;flex-wrap:wrap;}
+    .sidebar-nav{display:flex;flex-direction:row;overflow-x:auto;}
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- React & ReactDOM -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<!-- jsPDF + AutoTable for PDF export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+const { useState, useRef } = React;
+
+/* ═══════════════════════════════════════════════════════════════
+   SEED / DEFAULT DATA
+═══════════════════════════════════════════════════════════════ */
+const SEED = {
+  users:[
+    {id:'u1',username:'admin',password:'admin123',role:'admin',name:'System Admin'},
+    {id:'u2',username:'hod.civil',password:'hod123',role:'hod',name:'Dr. Ramesh Gupta',programId:'p1'},
+    {id:'u3',username:'hod.elec',password:'hod123',role:'hod',name:'Dr. Priya Sharma',programId:'p2'},
+    {id:'u4',username:'t.singh',password:'teacher123',role:'teacher',name:'Dr. Amit Singh',programId:'p1'},
+    {id:'u5',username:'t.verma',password:'teacher123',role:'teacher',name:'Prof. Neha Verma',programId:'p2'}
+  ],
+  programs:[
+    {id:'p1',name:'B.Tech Civil Engineering',code:'BTECH-CE',hodId:'u2'},
+    {id:'p2',name:'B.Tech Electrical Engineering',code:'BTECH-EE',hodId:'u3'}
+  ],
+  courses:[
+    {id:'c1',code:'CE201',name:'Structural Analysis',programId:'p1',teacherId:'u4',totalStudents:45,semester:'3rd'},
+    {id:'c2',code:'EE301',name:'Power Systems',programId:'p2',teacherId:'u5',totalStudents:38,semester:'5th'}
+  ],
+  courseOutcomes:{
+    'c1':[
+      {id:'co1',label:'CO1',desc:'Understand structural loads and their effects'},
+      {id:'co2',label:'CO2',desc:'Analyse statically determinate structures'},
+      {id:'co3',label:'CO3',desc:'Apply matrix methods for indeterminate structures'},
+      {id:'co4',label:'CO4',desc:'Evaluate structural stability and failure modes'}
+    ],
+    'c2':[
+      {id:'co1',label:'CO1',desc:'Understand power system components'},
+      {id:'co2',label:'CO2',desc:'Analyse fault conditions and protection schemes'},
+      {id:'co3',label:'CO3',desc:'Solve load flow problems using computational methods'}
+    ]
+  },
+  coPoMapping:{
+    'c1':{
+      'co1':{PO1:3,PO2:2,PO3:2,PO4:'-',PO5:'-',PO6:'-',PO7:'-',PO8:'-',PO9:'-',PO10:'-',PO11:2,PO12:2,PSO1:3,PSO2:2,PSO3:2},
+      'co2':{PO1:2,PO2:2,PO3:2,PO4:2,PO5:1,PO6:'-',PO7:1,PO8:'-',PO9:'-',PO10:'-',PO11:2,PO12:2,PSO1:3,PSO2:3,PSO3:2},
+      'co3':{PO1:2,PO2:2,PO3:2,PO4:2,PO5:2,PO6:'-',PO7:'-',PO8:'-',PO9:'-',PO10:'-',PO11:2,PO12:2,PSO1:3,PSO2:2,PSO3:3},
+      'co4':{PO1:3,PO2:3,PO3:3,PO4:3,PO5:'-',PO6:1,PO7:1,PO8:1,PO9:1,PO10:1,PO11:2,PO12:2,PSO1:3,PSO2:3,PSO3:2}
+    },
+    'c2':{
+      'co1':{PO1:2,PO2:2,PO3:'-',PO4:'-',PO5:'-',PO6:'-',PO7:'-',PO8:'-',PO9:'-',PO10:'-',PO11:1,PO12:2,PSO1:3,PSO2:2,PSO3:2},
+      'co2':{PO1:3,PO2:3,PO3:2,PO4:2,PO5:2,PO6:'-',PO7:'-',PO8:'-',PO9:'-',PO10:'-',PO11:2,PO12:2,PSO1:3,PSO2:3,PSO3:2},
+      'co3':{PO1:3,PO2:3,PO3:3,PO4:3,PO5:2,PO6:'-',PO7:'-',PO8:'-',PO9:'-',PO10:'-',PO11:2,PO12:2,PSO1:3,PSO2:3,PSO3:3}
+    }
+  },
+  attainmentData:{
+    'c1_co1':{cia1_p:39,cia2_p:32,assign_p:40,ese_p:42,survey:3},
+    'c1_co2':{cia1_p:36,cia2_p:28,assign_p:35,ese_p:40,survey:2},
+    'c1_co3':{cia1_p:30,cia2_p:25,assign_p:28,ese_p:38,survey:2},
+    'c1_co4':{cia1_p:33,cia2_p:29,assign_p:37,ese_p:41,survey:3}
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   LOGO
+═══════════════════════════════════════════════════════════════ */
+const BIET_LOGO = "data:image/png;base64,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";
+
+/* ═══════════════════════════════════════════════════════════════
+   LOCAL STORAGE HELPERS
+═══════════════════════════════════════════════════════════════ */
+function getDB(){
+  try{ return JSON.parse(localStorage.getItem('copo_portal_v1')||'null')||SEED; }
+  catch{ return SEED; }
+}
+function setDB(d){
+  try{ localStorage.setItem('copo_portal_v1',JSON.stringify(d)); }catch{}
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════════════════════════════ */
+const PO_LIST=['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12','PSO1','PSO2','PSO3'];
+
+/* ═══════════════════════════════════════════════════════════════
+   ATTAINMENT CALCULATIONS
+═══════════════════════════════════════════════════════════════ */
+function attLevel(pct){ return pct>80?3:pct>70?2:pct>60?1:0; }
+function calcCOA(d,N){
+  if(!N||d.cia1_p===''||d.cia2_p===''||d.assign_p===''||d.ese_p==='') return null;
+  const a=attLevel((d.cia1_p/N)*100), b=attLevel((d.cia2_p/N)*100);
+  const e=attLevel((d.assign_p/N)*100);
+  const c=attLevel((d.ese_p/N)*100), dd=d.survey||0;
+  const CIA=(a+b+e)/3, DA=0.4*CIA+0.6*c, IA=dd, COA=0.8*DA+0.2*IA;
+  return{a,b,e,c,d:dd,CIA,DA,IA,COA};
+}
+function avgMapping(cos,mapping,po){
+  let sum=0,cnt=0;
+  cos.forEach(co=>{ const v=(mapping[co.id]||{})[po]; if(v&&v!=='-'){sum+=parseFloat(v);cnt++;} });
+  return cnt>0?sum/cnt:null;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SVG ICONS
+═══════════════════════════════════════════════════════════════ */
+const SVG={
+  home:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>`,
+  programs:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
+  users:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>`,
+  courses:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>`,
+  attainment:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+  logout:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+  plus:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  mapping:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
+  download:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+  upload:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+  report:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+};
+function Ic({n,s=18}){
+  return React.createElement('span',{
+    style:{width:s,height:s,display:'inline-flex',alignItems:'center',flexShrink:0},
+    dangerouslySetInnerHTML:{__html:SVG[n]||''}
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PDF EXPORT
+═══════════════════════════════════════════════════════════════ */
+function exportCoursePDF(course,cos,mapping,attainmentData,db){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const N=course.totalStudents||0;
+  const program=db.programs.find(p=>p.id===course.programId);
+  const teacher=db.users.find(u=>u.id===course.teacherId);
+  const pageW=doc.internal.pageSize.getWidth();
+
+  // ── Helper: draw page header with logo on every PDF page ──
+  function drawPageHeader(doc,pageW,subtitleLeft,subtitleRight){
+    doc.setFillColor(30,58,95);
+    doc.rect(0,0,pageW,28,'F');
+    // logo from base64
+    try{ doc.addImage(BIET_LOGO,'PNG',6,2,22,22); }catch(e){}
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(11);doc.setFont('helvetica','bold');
+    doc.text('Bundelkhand Institute of Engineering & Technology, Jhansi',32,9);
+    doc.setFontSize(8);doc.setFont('helvetica','normal');
+    doc.text('CO-PO Attainment Portal — Outcome Based Education',32,15);
+    doc.setFontSize(8.5);doc.setFont('helvetica','bold');
+    doc.text(subtitleLeft||'',32,22);
+    doc.setFont('helvetica','normal');
+    doc.text('Generated: '+new Date().toLocaleDateString('en-IN'),pageW-8,22,{align:'right'});
+    doc.setTextColor(30,30,30);
+  }
+
+  // PAGE 1 — Header + Course Outcomes
+  drawPageHeader(doc,pageW,course.code+' — '+course.name,'');
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);
+  doc.text('Programme: '+(program?.name||'-')+' | Teacher: '+(teacher?.name||'-')+' | Semester: '+course.semester+' | Students (N): '+N,14,35);
+  doc.setFontSize(11);doc.setFont('helvetica','bold');
+  doc.text('Step 1 - Course Outcomes (COs)',14,42);
+  doc.autoTable({
+    startY:46,
+    head:[['CO','Description']],
+    body:cos.map(co=>[co.label,co.desc]),
+    styles:{fontSize:9,cellPadding:3},
+    headStyles:{fillColor:[37,99,235],textColor:255,fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[240,246,255]},
+    columnStyles:{0:{cellWidth:20},1:{cellWidth:'auto'}},
+    margin:{left:14,right:14}
+  });
+
+  // PAGE 2 — CO-PO Mapping
+  doc.addPage('a4','landscape');
+  drawPageHeader(doc,pageW,course.code+' — '+course.name+' | Step 2: CO-PO / PSO Mapping Matrix','');
+  const poHead=['CO',...PO_LIST];
+  const poBody=cos.map(co=>{
+    const row=[co.label];
+    PO_LIST.forEach(po=>{const v=(mapping[co.id]||{})[po];row.push(v&&v!=='-'?String(v):'-');});
+    return row;
+  });
+  const avgRow=['Avg'];
+  PO_LIST.forEach(po=>{const m=avgMapping(cos,mapping,po);avgRow.push(m?m.toFixed(2):'-');});
+  poBody.push(avgRow);
+  doc.autoTable({
+    startY:32,head:[poHead],body:poBody,
+    styles:{fontSize:7.5,cellPadding:2.5,halign:'center'},
+    headStyles:{fillColor:[37,99,235],textColor:255,fontStyle:'bold'},
+    columnStyles:{0:{cellWidth:16,halign:'left'}},
+    didDrawCell:(data)=>{
+      if(data.section==='body'&&data.row.index===cos.length){
+        doc.setFillColor(219,234,254);
+        doc.rect(data.cell.x,data.cell.y,data.cell.width,data.cell.height,'F');
+        doc.setTextColor(30,64,175);doc.setFont('helvetica','bold');
+        doc.text(data.cell.raw,data.cell.x+data.cell.width/2,data.cell.y+data.cell.height/2+1,{align:'center'});
+        doc.setTextColor(30,30,30);doc.setFont('helvetica','normal');
+      }
+    },
+    margin:{left:14,right:14}
+  });
+
+  // PAGE 3 — Attainment Calculations
+  doc.addPage('a4','landscape');
+  drawPageHeader(doc,pageW,course.code+' — '+course.name+' | Step 3: CO Attainment Calculations','');
+  const attHead=['CO','CT-1 P','CT-1 %','a','CT-2 P','CT-2 %','b','Assign P','Assign %','e','ESE P','ESE %','c','Survey d','CIA','DA','IA','COA'];
+  const attBody=cos.map(co=>{
+    const d=attainmentData[course.id+'_'+co.id]||{};
+    const r=calcCOA(d,N);
+    if(!r) return[co.label,d.cia1_p||'-','-','-',d.cia2_p||'-','-','-',d.assign_p||'-','-','-',d.ese_p||'-','-','-',d.survey||'-','-','-','-','Not filled'];
+    return[co.label,
+      d.cia1_p,((d.cia1_p/N)*100).toFixed(1)+'%',r.a,
+      d.cia2_p,((d.cia2_p/N)*100).toFixed(1)+'%',r.b,
+      d.assign_p,((d.assign_p/N)*100).toFixed(1)+'%',r.e,
+      d.ese_p,((d.ese_p/N)*100).toFixed(1)+'%',r.c,
+      r.d,r.CIA.toFixed(2),r.DA.toFixed(2),r.IA,r.COA.toFixed(2)];
+  });
+  doc.autoTable({
+    startY:32,head:[attHead],body:attBody,
+    styles:{fontSize:7.5,cellPadding:2.5,halign:'center'},
+    headStyles:{fillColor:[37,99,235],textColor:255,fontStyle:'bold'},
+    columnStyles:{0:{halign:'left',cellWidth:14}},
+    didDrawCell:(data)=>{
+      if(data.section==='body'&&data.column.index===14){
+        const v=parseFloat(data.cell.raw);
+        if(!isNaN(v)){
+          const col=v>=2.5?[22,163,74]:v>=1.5?[217,119,6]:[220,38,38];
+          doc.setTextColor(...col);doc.setFont('helvetica','bold');
+          doc.text(String(data.cell.raw),data.cell.x+data.cell.width/2,data.cell.y+data.cell.height/2+1,{align:'center'});
+          doc.setTextColor(30,30,30);doc.setFont('helvetica','normal');
+        }
+      }
+    },
+    margin:{left:14,right:14}
+  });
+  doc.setFontSize(8);doc.setFont('helvetica','italic');doc.setTextColor(100,100,100);
+  doc.text('Formula: CIA=avg(a,b,e) | DA=0.4xCIA+0.6xESE | COA=0.8xDA+0.2xIA | Target:60% | 3:>80% 2:>70% 1:>60%',14,doc.lastAutoTable.finalY+6);
+
+  // PAGE 4 — PO/PSO Attainment
+  const coaVals=cos.map(co=>{const d=attainmentData[course.id+'_'+co.id]||{};const r=calcCOA(d,N);return r?r.COA:null;}).filter(v=>v!==null);
+  if(coaVals.length>0){
+    const avgCOA=coaVals.reduce((s,v)=>s+v,0)/coaVals.length;
+    doc.addPage('a4','landscape');
+    drawPageHeader(doc,pageW,course.code+' — '+course.name+' | Step 4: PO/PSO Attainment Level','');
+    const poAttBody=PO_LIST.map(po=>{
+      const M=avgMapping(cos,mapping,po);
+      if(M===null) return[po,'No mapping','—'];
+      return[po,M.toFixed(2),(avgCOA*M/3).toFixed(2)];
+    });
+    doc.autoTable({
+      startY:32,
+      head:[['PO/PSO','Avg Mapping (M)','Attainment Level (COA x M/3)']],
+      body:poAttBody,
+      styles:{fontSize:9,cellPadding:3},
+      headStyles:{fillColor:[37,99,235],textColor:255,fontStyle:'bold'},
+      columnStyles:{0:{cellWidth:25},1:{cellWidth:40,halign:'center'},2:{cellWidth:60,halign:'center'}},
+      didDrawCell:(data)=>{
+        if(data.section==='body'&&data.column.index===2){
+          const v=parseFloat(data.cell.raw);
+          if(!isNaN(v)){
+            const col=v>=2?[22,163,74]:v>=1.5?[217,119,6]:[220,38,38];
+            doc.setTextColor(...col);doc.setFont('helvetica','bold');
+            doc.text(String(data.cell.raw),data.cell.x+data.cell.width/2,data.cell.y+data.cell.height/2+1,{align:'center'});
+            doc.setTextColor(30,30,30);doc.setFont('helvetica','normal');
+          }
+        }
+      },
+      margin:{left:14,right:14}
+    });
+    doc.setFontSize(9);doc.setFont('helvetica','italic');doc.setTextColor(80,80,80);
+    doc.text('Avg COA = '+avgCOA.toFixed(2)+'  |  PO Attainment = COA x M / 3',14,doc.lastAutoTable.finalY+6);
+  }
+  doc.save('CO-PO_'+course.code+'_'+course.name.replace(/\s+/g,'_')+'.pdf');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BULK IMPORT ENGINE
+═══════════════════════════════════════════════════════════════ */
+const TEMPLATES={
+  courses:{
+    headers:['course_code','course_name','semester','total_students','teacher_username'],
+    sample:[['CE301','Fluid Mechanics','4th','52','t.singh'],['CE302','Soil Mechanics','4th','48','t.singh']]
+  },
+  outcomes:{
+    headers:['course_code','co_label','co_description'],
+    sample:[['CE301','CO1','Understand fluid properties and hydrostatics'],['CE301','CO2','Apply Bernoulli equation to real flow problems']]
+  },
+  attainment:{
+    headers:['course_code','co_label','ct1_pass','ct2_pass','assign_pass','ese_pass','survey_level'],
+    sample:[['CE301','CO1','42','38','40','48','3'],['CE301','CO2','35','30','33','45','2']]
+  }
+};
+function parseCSV(text){
+  const lines=text.trim().split('\n').map(l=>l.split(',').map(c=>c.trim().replace(/^"|"$/g,'')));
+  if(lines.length<2) return{headers:[],rows:[]};
+  return{headers:lines[0],rows:lines.slice(1).filter(r=>r.some(c=>c))};
+}
+function importData(type,parsed,db,programId){
+  const errors=[],warnings=[];
+  let newDb={...db,courses:[...db.courses],users:[...db.users],
+    courseOutcomes:{...db.courseOutcomes},attainmentData:{...db.attainmentData}};
+  if(type==='courses'){
+    parsed.rows.forEach((row,i)=>{
+      const [code,name,semester,students,teacherUsername]=row;
+      if(!code||!name){errors.push('Row '+(i+2)+': missing code or name');return;}
+      if(newDb.courses.find(c=>c.code===code&&c.programId===programId)){warnings.push('Row '+(i+2)+': course '+code+' already exists - skipped');return;}
+      const teacher=db.users.find(u=>u.username===teacherUsername&&u.role==='teacher');
+      newDb.courses.push({id:'c'+Date.now()+i,code,name,semester:semester||'',totalStudents:parseInt(students)||0,programId,teacherId:teacher?.id||null});
+    });
+  } else if(type==='outcomes'){
+    parsed.rows.forEach((row,i)=>{
+      const [code,label,desc]=row;
+      if(!code||!label||!desc){errors.push('Row '+(i+2)+': missing fields');return;}
+      const course=newDb.courses.find(c=>c.code===code&&c.programId===programId);
+      if(!course){errors.push('Row '+(i+2)+': course '+code+' not found in this programme');return;}
+      const cos=newDb.courseOutcomes[course.id]||[];
+      if(cos.find(co=>co.label===label)){warnings.push('Row '+(i+2)+': '+label+' in '+code+' already exists - skipped');return;}
+      newDb.courseOutcomes={...newDb.courseOutcomes,[course.id]:[...cos,{id:'co'+Date.now()+i,label,desc}]};
+    });
+  } else if(type==='attainment'){
+    parsed.rows.forEach((row,i)=>{
+      const [code,label,cia1,cia2,assign,ese,survey]=row;
+      if(!code||!label){errors.push('Row '+(i+2)+': missing fields');return;}
+      const course=newDb.courses.find(c=>c.code===code&&c.programId===programId);
+      if(!course){errors.push('Row '+(i+2)+': course '+code+' not found');return;}
+      const co=(newDb.courseOutcomes[course.id]||[]).find(c=>c.label===label);
+      if(!co){errors.push('Row '+(i+2)+': '+label+' not found in '+code);return;}
+      newDb.attainmentData={...newDb.attainmentData,[course.id+'_'+co.id]:{cia1_p:parseInt(cia1)||0,cia2_p:parseInt(cia2)||0,assign_p:parseInt(assign)||0,ese_p:parseInt(ese)||0,survey:parseInt(survey)||0}};
+    });
+  }
+  return{newDb,errors,warnings};
+}
+function downloadTemplate(type){
+  const t=TEMPLATES[type];
+  const csv=[t.headers.join(','),...t.sample.map(r=>r.join(','))].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='template_'+type+'.csv';a.click();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SHARED COMPONENTS
+═══════════════════════════════════════════════════════════════ */
+function Modal({title,onClose,children,footer}){
+  return React.createElement('div',{className:'modal-overlay',onClick:e=>e.target===e.currentTarget&&onClose()},
+    React.createElement('div',{className:'modal'},
+      React.createElement('div',{className:'flex-between mb-2'},
+        React.createElement('h2',null,title),
+        React.createElement('button',{onClick:onClose,style:{background:'none',border:'none',cursor:'pointer',fontSize:'1.4rem',color:'#718096',lineHeight:1}},'×')
+      ),
+      children,
+      footer&&React.createElement('div',{className:'modal-footer'},footer)
+    )
+  );
+}
+function StatCard({label,value,color}){
+  return React.createElement('div',{className:'stat-card '+color},
+    React.createElement('div',{className:'label'},label),
+    React.createElement('div',{className:'value'},value)
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN PAGE
+═══════════════════════════════════════════════════════════════ */
+function LoginPage({db,onLogin}){
+  const [tab,setTab]=useState('admin');
+  const [form,setForm]=useState({username:'',password:''});
+  const [err,setErr]=useState('');
+  const demos={admin:{u:'admin',p:'admin123'},hod:{u:'hod.civil',p:'hod123'},teacher:{u:'t.singh',p:'teacher123'}};
+  const handle=()=>{
+    const u=db.users.find(u=>u.username===form.username&&u.password===form.password&&u.role===tab);
+    if(u){setErr('');onLogin(u);}else setErr('Invalid credentials. Please try again.');
+  };
+  return React.createElement('div',{className:'auth-wrap'},
+    React.createElement('div',{className:'auth-card'},
+      React.createElement('div',{className:'auth-logo'},
+        React.createElement('img',{src:BIET_LOGO,alt:'BIET Logo'}),
+        React.createElement('div',{className:'inst-full'},'Bundelkhand Institute of Engineering & Technology, Jhansi'),
+        React.createElement('h1',null,'CO-PO Attainment Portal'),
+        React.createElement('p',null,'Outcome Based Education System')
+      ),
+      React.createElement('div',{className:'auth-tabs'},
+        ['admin','hod','teacher'].map(t=>
+          React.createElement('button',{key:t,className:'auth-tab'+(tab===t?' active':''),
+            onClick:()=>{setTab(t);setForm({username:'',password:''});setErr('');}},
+            t.charAt(0).toUpperCase()+t.slice(1)
+          )
+        )
+      ),
+      err&&React.createElement('div',{className:'alert alert-error'},err),
+      React.createElement('div',{className:'form-group'},
+        React.createElement('label',null,'Username'),
+        React.createElement('input',{type:'text',value:form.username,placeholder:tab+' username',
+          onChange:e=>setForm({...form,username:e.target.value})})
+      ),
+      React.createElement('div',{className:'form-group'},
+        React.createElement('label',null,'Password'),
+        React.createElement('input',{type:'password',value:form.password,placeholder:'Password',
+          onChange:e=>setForm({...form,password:e.target.value}),
+          onKeyDown:e=>e.key==='Enter'&&handle()})
+      ),
+      React.createElement('button',{className:'btn btn-primary btn-full',onClick:handle},'Sign In'),
+      React.createElement('div',{style:{marginTop:'1rem',padding:'.75rem',background:'#f8fafc',borderRadius:'8px',fontSize:'.78rem',color:'#64748b'}},
+        React.createElement('strong',null,'Demo credentials - '),tab,': ',demos[tab].u,' / ',demos[tab].p
+      )
+    )
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════════════════ */
+function DashboardPage({user,db}){
+  const myCourses=user.role==='teacher'?db.courses.filter(c=>c.teacherId===user.id):user.role==='hod'?db.courses.filter(c=>c.programId===user.programId):db.courses;
+  const attDone=Object.keys(db.attainmentData||{}).filter(k=>myCourses.find(c=>k.startsWith(c.id))).length;
+  const myTeachers=user.role==='hod'?db.users.filter(u=>u.role==='teacher'&&u.programId===user.programId):[];
+  return React.createElement('div',null,
+    React.createElement('div',{className:'stats-grid'},
+      user.role==='admin'&&React.createElement(StatCard,{label:'Programmes',value:db.programs.length,color:'blue'}),
+      user.role==='admin'&&React.createElement(StatCard,{label:'HODs',value:db.users.filter(u=>u.role==='hod').length,color:'purple'}),
+      user.role==='admin'&&React.createElement(StatCard,{label:'Teachers',value:db.users.filter(u=>u.role==='teacher').length,color:'green'}),
+      user.role==='admin'&&React.createElement(StatCard,{label:'Total Courses',value:db.courses.length,color:'amber'}),
+      user.role==='hod'&&React.createElement(StatCard,{label:'Teachers',value:myTeachers.length,color:'blue'}),
+      user.role==='hod'&&React.createElement(StatCard,{label:'Courses',value:myCourses.length,color:'green'}),
+      user.role==='hod'&&React.createElement(StatCard,{label:'Attainments Done',value:attDone,color:'amber'}),
+      user.role==='teacher'&&React.createElement(StatCard,{label:'My Courses',value:myCourses.length,color:'blue'}),
+      user.role==='teacher'&&React.createElement(StatCard,{label:'COs Defined',value:myCourses.reduce((a,c)=>(db.courseOutcomes[c.id]||[]).length+a,0),color:'green'}),
+      user.role==='teacher'&&React.createElement(StatCard,{label:'Attainments Done',value:attDone,color:'amber'}),
+    ),
+    React.createElement('div',{className:'card'},
+      React.createElement('div',{className:'card-header'},React.createElement('h3',null,user.role==='admin'?'All Programmes':user.role==='hod'?'Programme Courses':'My Courses')),
+      React.createElement('div',{style:{overflowX:'auto'}},
+        React.createElement('table',null,
+          React.createElement('thead',null,React.createElement('tr',null,
+            (user.role==='admin'?['Programme','Code','HOD','Courses']:['Code','Course','Semester','Students','Status']).map(h=>React.createElement('th',{key:h},h))
+          )),
+          React.createElement('tbody',null,
+            user.role==='admin'?db.programs.map(p=>{
+              const hod=db.users.find(u=>u.id===p.hodId);
+              return React.createElement('tr',{key:p.id},
+                React.createElement('td',null,React.createElement('strong',null,p.name)),
+                React.createElement('td',null,React.createElement('span',{className:'tag'},p.code)),
+                React.createElement('td',null,hod?React.createElement('span',{className:'badge badge-purple'},hod.name):React.createElement('span',{className:'text-muted text-sm'},'Not assigned')),
+                React.createElement('td',null,React.createElement('span',{className:'badge badge-blue'},db.courses.filter(c=>c.programId===p.id).length))
+              );
+            }):myCourses.map(c=>{
+              const hasAtt=Object.keys(db.attainmentData||{}).some(k=>k.startsWith(c.id));
+              const hasMap=!!db.coPoMapping[c.id];
+              return React.createElement('tr',{key:c.id},
+                React.createElement('td',null,React.createElement('span',{className:'tag'},c.code)),
+                React.createElement('td',null,React.createElement('strong',null,c.name)),
+                React.createElement('td',null,c.semester),
+                React.createElement('td',null,c.totalStudents),
+                React.createElement('td',null,
+                  hasAtt?React.createElement('span',{className:'badge badge-green'},'Complete'):
+                  hasMap?React.createElement('span',{className:'badge badge-amber'},'Mapped'):
+                  React.createElement('span',{className:'badge badge-red'},'Pending')
+                )
+              );
+            })
+          )
+        )
+      )
+    )
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN — PROGRAMMES
+═══════════════════════════════════════════════════════════════ */
+function ProgramsPage({user,db,save,flash}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [form,setForm]=useState({name:'',code:'',hodId:''});
+  const hods=db.users.filter(u=>u.role==='hod');
+  const add=()=>{
+    if(!form.name||!form.code){flash('Fill required fields','error');return;}
+    const np={id:'p'+Date.now(),...form};
+    const nd={...db,programs:[...db.programs,np]};
+    if(form.hodId) nd.users=db.users.map(u=>u.id===form.hodId?{...u,programId:np.id}:u);
+    save(nd);flash('Programme added successfully');setShowAdd(false);setForm({name:'',code:'',hodId:''});
+  };
+  const del=(id)=>{
+    if(!confirm('Delete this programme and all its courses?'))return;
+    save({...db,programs:db.programs.filter(p=>p.id!==id),courses:db.courses.filter(c=>c.programId!==id),users:db.users.map(u=>u.programId===id?{...u,programId:null}:u)});
+    flash('Programme deleted');
+  };
+  return React.createElement('div',null,
+    React.createElement('div',{className:'flex-between',style:{marginBottom:'1rem'}},
+      React.createElement('span',{className:'text-muted text-sm'},db.programs.length+' programmes'),
+      React.createElement('button',{className:'btn btn-primary',onClick:()=>setShowAdd(true)},React.createElement(Ic,{n:'plus',s:16}),'Add Programme')
+    ),
+    React.createElement('div',{className:'card'},
+      React.createElement('div',{style:{overflowX:'auto'}},
+        React.createElement('table',null,
+          React.createElement('thead',null,React.createElement('tr',null,['Programme Name','Code','HOD','Courses','Action'].map(h=>React.createElement('th',{key:h},h)))),
+          React.createElement('tbody',null,
+            db.programs.length===0?React.createElement('tr',null,React.createElement('td',{colSpan:5,style:{textAlign:'center',padding:'2rem',color:'#718096'}},'No programmes added yet')):
+            db.programs.map(p=>{
+              const hod=db.users.find(u=>u.id===p.hodId);
+              return React.createElement('tr',{key:p.id},
+                React.createElement('td',null,React.createElement('strong',null,p.name)),
+                React.createElement('td',null,React.createElement('span',{className:'tag'},p.code)),
+                React.createElement('td',null,hod?React.createElement('span',{className:'badge badge-purple'},hod.name):React.createElement('span',{className:'text-muted text-sm'},'Not assigned')),
+                React.createElement('td',null,React.createElement('span',{className:'badge badge-blue'},db.courses.filter(c=>c.programId===p.id).length)),
+                React.createElement('td',null,React.createElement('button',{className:'btn btn-sm btn-danger',onClick:()=>del(p.id)},'Delete'))
+              );
+            })
+          )
+        )
+      )
+    ),
+    showAdd&&React.createElement(Modal,{title:'Add New Programme',onClose:()=>setShowAdd(false),
+      footer:[React.createElement('button',{key:'c',className:'btn btn-secondary',onClick:()=>setShowAdd(false)},'Cancel'),React.createElement('button',{key:'a',className:'btn btn-primary',onClick:add},'Add Programme')]},
+      React.createElement('div',{className:'form-group'},React.createElement('label',null,'Programme Name *'),React.createElement('input',{type:'text',placeholder:'e.g. B.Tech Civil Engineering',value:form.name,onChange:e=>setForm({...form,name:e.target.value})})),
+      React.createElement('div',{className:'form-group'},React.createElement('label',null,'Programme Code *'),React.createElement('input',{type:'text',placeholder:'e.g. BTECH-CE',value:form.code,onChange:e=>setForm({...form,code:e.target.value})})),
+      React.createElement('div',{className:'form-group'},React.createElement('label',null,'Assign HOD'),
+        React.createElement('select',{value:form.hodId,onChange:e=>setForm({...form,hodId:e.target.value})},
+          React.createElement('option',{value:''},'-- Select HOD --'),
+          hods.map(h=>React.createElement('option',{key:h.id,value:h.id},h.name))
+        )
+      )
+    )
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN — HODs
+═══════════════════════════════════════════════════════════════ */
+function HODsPage({user,db,save,flash}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [form,setForm]=useState({name:'',username:'',password:'',programId:''});
+  const hods=db.users.filter(u=>u.role==='hod');
+  const add=()=>{
+    if(!form.name||!form.username||!form.password){flash('Fill all fields','error');return;}
+    if(db.users.find(u=>u.username===form.username)){flash('Username already exists','error');return;}
+    const nu={id:'u'+Date.now(),role:'hod',...form};
+    const nd={...db,users:[...db.users,nu]};
+    if(form.programId) nd.programs=db.programs.map(p=>p.id===form.programId?{...p,hodId:nu.id}:p);
+    save(nd);flash('HOD account created');setShowAdd(false);setForm({name:'',username:'',password:'',programId:''});
+  };
+  const del=(id)=>{
+    if(!confirm('Delete this HOD?'))return;
+    save({...db,users:db.users.filter(u=>u.id!==id),programs:db.programs.map(p=>p.hodId===id?{...p,hodId:null}:p)});
+    flash('HOD deleted');
+  };
+  return React.createElement('div',null,
+    React.createElement('div',{className:'flex-between',style:{marginBottom:'1rem'}},
+      React.createElement('span',{className:'text-muted text-sm'},hods.length+' HODs registered'),
+      React.createElement('button',{className:'btn btn-primary',onClick:()=>setShowAdd(true)},React.createElement(Ic,{n:'plus',s:16}),'Add HOD')
+    ),
+    React.createElement('div',{className:'card'},
+      React.createElement('div',{style:{overflowX:'auto'}},
+        React.createElement('table',null,
+          React.createElement('thead',null,React.createElement('tr',null,['Name','Username','Assigned Programme','Action'].map(h=>React.createElement('th',{key:h},h)))),
+          React.createElement('tbody',null,
+            hods.length===0?React.createElement('tr',null,React.createElement('td',{colSpan:4,style:{textAlign:'center',padding:'2rem',color:'#718096'}},'No HODs added yet')):
+            hods.map(h=>{
+              const prog=db.programs.find(p=>p.hodId===h.id);
+              return React.createElement('tr',{key:h.id},
+                React.createElement('td',null,React.createElement('strong',null,h.name)),
+                React.createElement('td',null,React.createElement('span',{className:'tag'},h.username)),
+                React.createElement('td',null,prog?React.createElement('span',{className:'badge badge-blue'},prog.name):React.createElement('span',{className:'text-muted text-sm'},'Not assigned')),
+                React.createElement('td',null,React.createElement('button',{className:'btn btn-sm btn-danger',onClick:()=>del(h.id)},'Delete'))
+              );
+            })
+          )
+        )
+      )
+    ),
+    showAdd&&React.createElement(Modal,{title:'Add HOD Account',onClose:()=>setShowAdd(false),
+      footer:[React.createElement('button',{key:'c',className:'btn btn-secondary',onClick:()=>setShowAdd(false)},'Cancel'),React.createElement('button',{key:'a',className:'btn btn-primary',onClick:add},'Create HOD')]},
+      React.createElement('div',{className:'form-group'},React.createElement('label',null,'Full Name *'),React.createElement('input',{type:'text',placeholder:'Dr. Name',value:form.name,onChange:e=>setForm({...form,name:e.target.value})})),
+      React.createElement('div',{className:'form-group'},React.createElement('label',null,'Username *'),React.createElement('input',{type:'text',placeholder:'hod.dept',value:form.username,onChange:e=>setForm({...form,username:e.target.value})})),
+      React.createElement('div',{className:'form-group'},React.createElement('label',null,'Password *'),React.createElement('input',{type:'password',value:form.password,onChange:e=>setForm({...form,password:e.target.value})})),
+      React.createElement('div',{className:'form-group'},React.createElement('label',null,'Assign Programme'),
+        React.createElement('select',{value:form.programId,onChange:e=>setForm({...form,programId:e.target.value})},
+          React.createElement('option',{value:''},'-- Select Programme --'),
+          db.programs.map(p=>React.createElement('option',{key:p.id,value:p.id},p.name))
+        )
+      )
+    )
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HOD — TEACHERS
+═══════════════════════════════════════════════════════════════ */
+function TeachersPage({user,db,save,flash}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [form,setForm]=useState({name:'',username:'',password:''});
+  const teachers=db.users.filter(u=>u.role==='teacher'&&u.programId===user.programId);
+  const add=()=>{
+    if(!form.name||!form.username||!form.password){flash('Fill all fields','error');return;}
+    if(db.users.find(u=>u.username===form.username)){flash('Username already exists','error');return;}
+    save({...db,users:[...db.users,{id:'u'+Date.now(),role:'teacher',programId:user.programId,...form}]});
+    flash('Teacher account created');setShowAdd(false);setForm({name:'',username:'',password:''});
+  };
+  const del=(id)=>{
+    if(!confirm('Delete teacher account?'))return;
+    save({...db,users:db.users.filter(u=>u.id!==id),courses:db.courses.map(c=>c.teacherId===id?{...c,teacherId:null}:c)});
+    flash('Teacher deleted');
+  };
+  return React.createElement('div',null,
+    React.createElement('div',{className:'flex-between',style:{marginBottom:'1rem'}},
+      React.createElement('span',{className:'text-muted text-sm'},teachers.length+' teachers in this programme'),
+      React.createElement('button',{className:'btn btn-primary',onClick:()=>setShowAdd(true)},React.createElement(Ic,{n:'plus',s:16}),'Add Teacher')
+    ),
+    React.createElement('div',{className:'card'},
+      React.createElement('div',{style:{overflowX:'auto'}},
+        React.createElement('table',null,
+          React.createElement('thead',null,React.createElement('tr',null,['Name','Username','Assigned Courses','Action'].map(h=>React.createElement('th',{key:h},h)))),
+          React.createElement('tbody',null,
+            teachers.length===0?React.createElement('tr',null,React.createElement('td',{colSpan:4,style:{textAlign:'center',padding:'2rem',color:'#718096'}},'No teachers yet')):
+            teachers.map(t=>{
+              const cs=db.courses.filter(c=>c.teacherId===t.id);
+              return React.createElement('tr',{key:t.id},
+                React.createElement('td',null,React.createElement('strong',null,t.name)),
+                React.createElement('td',null,React.createElement('span',{className:'tag'},t.username)),
+                React.createElement('td',null,cs.length?cs.map(c=>React.createElement('span',{key:c.id,className:'badge badge-blue',style:{marginRight:4}},c.code)):React.createElement('span',{className:'text-muted text-sm'},'None')),
+                React.createElement('td',null,React.createElement('button',{className:'btn btn-sm btn-danger',onClick:()=>del(t.id)},'Delete'))
+              );
+            })
+          )
+        )
+      )
+    ),
+    showAdd&&React.createElement(Modal,{title:'Create Teacher Account',onClose:()=>setShowAdd(false),
+      footer:[React.createElement('button',{key:'c',className:'btn btn-secondary',onClick:()=>setShowAdd(false)},'Cancel'),React.createElement('button',{key:'a',className:'btn btn-primary',onClick:add},'Create Account')]},
+      React.createElement('div',{className:'form-group'},React.createElement('label',null,'Full Name *'),React.createElement('input',{type:'text',value:form.name,onChange:e=>setForm({...form,name:e.target.value})})),
+      React.createElement('div',{className:'form-group'},React.createElement('label',null,'Username *'),React.createElement('input',{type:'text',value:form.username,onChange:e=>setForm({...form,username:e.target.value})})),
+      React.createElement('div',{className:'form-group'},React.createElement('label',null,'Password *'),React.createElement('input',{type:'password',value:form.password,onChange:e=>setForm({...form,password:e.target.value})}))
+    )
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HOD — COURSES
+═══════════════════════════════════════════════════════════════ */
+function CoursesPage({user,db,save,flash}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [form,setForm]=useState({code:'',name:'',semester:'',totalStudents:'',teacherId:''});
+  const courses=db.courses.filter(c=>c.programId===user.programId);
+  const teachers=db.users.filter(u=>u.role==='teacher'&&u.programId===user.programId);
+  const add=()=>{
+    if(!form.code||!form.name||!form.semester||!form.totalStudents){flash('Fill all required fields','error');return;}
+    save({...db,courses:[...db.courses,{id:'c'+Date.now(),programId:user.programId,...form,totalStudents:parseInt(form.totalStudents)||0}]});
+    flash('Course added');setShowAdd(false);setForm({code:'',name:'',semester:'',totalStudents:'',teacherId:''});
+  };
+  const del=(id)=>{if(!confirm('Delete this course?'))return;save({...db,courses:db.courses.filter(c=>c.id!==id)});flash('Course deleted');};
+  return React.createElement('div',null,
+    React.createElement('div',{className:'flex-between',style:{marginBottom:'1rem'}},
+      React.createElement('span',{className:'text-muted text-sm'},courses.length+' courses'),
+      React.createElement('button',{className:'btn btn-primary',onClick:()=>setShowAdd(true)},React.createElement(Ic,{n:'plus',s:16}),'Add Course')
+    ),
+    React.createElement('div',{className:'card'},
+      React.createElement('div',{style:{overflowX:'auto'}},
+        React.createElement('table',null,
+          React.createElement('thead',null,React.createElement('tr',null,['Code','Course Name','Semester','Students','Teacher','COs','Action'].map(h=>React.createElement('th',{key:h},h)))),
+          React.createElement('tbody',null,
+            courses.length===0?React.createElement('tr',null,React.createElement('td',{colSpan:7,style:{textAlign:'center',padding:'2rem',color:'#718096'}},'No courses yet')):
+            courses.map(c=>{
+              const t=db.users.find(u=>u.id===c.teacherId);
+              return React.createElement('tr',{key:c.id},
+                React.createElement('td',null,React.createElement('span',{className:'tag'},c.code)),
+                React.createElement('td',null,React.createElement('strong',null,c.name)),
+                React.createElement('td',null,c.semester),
+                React.createElement('td',null,c.totalStudents),
+                React.createElement('td',null,t?React.createElement('span',{className:'badge badge-green'},t.name):React.createElement('span',{className:'text-muted text-sm'},'Unassigned')),
+                React.createElement('td',null,React.createElement('span',{className:'badge badge-blue'},(db.courseOutcomes[c.id]||[]).length)),
+                React.createElement('td',null,React.createElement('button',{className:'btn btn-sm btn-danger',onClick:()=>del(c.id)},'Delete'))
+              );
+            })
+          )
+        )
+      )
+    ),
+    showAdd&&React.createElement(Modal,{title:'Add Course',onClose:()=>setShowAdd(false),
+      footer:[React.createElement('button',{key:'c',className:'btn btn-secondary',onClick:()=>setShowAdd(false)},'Cancel'),React.createElement('button',{key:'a',className:'btn btn-primary',onClick:add},'Add Course')]},
+      React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'.75rem'}},
+        React.createElement('div',{className:'form-group'},React.createElement('label',null,'Course Code *'),React.createElement('input',{type:'text',value:form.code,onChange:e=>setForm({...form,code:e.target.value})})),
+        React.createElement('div',{className:'form-group'},React.createElement('label',null,'Semester *'),React.createElement('input',{type:'text',value:form.semester,onChange:e=>setForm({...form,semester:e.target.value})}))
+      ),
+      React.createElement('div',{className:'form-group'},React.createElement('label',null,'Course Name *'),React.createElement('input',{type:'text',value:form.name,onChange:e=>setForm({...form,name:e.target.value})})),
+      React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'.75rem'}},
+        React.createElement('div',{className:'form-group'},React.createElement('label',null,'Total Students *'),React.createElement('input',{type:'number',value:form.totalStudents,onChange:e=>setForm({...form,totalStudents:e.target.value})})),
+        React.createElement('div',{className:'form-group'},React.createElement('label',null,'Assign Teacher'),
+          React.createElement('select',{value:form.teacherId,onChange:e=>setForm({...form,teacherId:e.target.value})},
+            React.createElement('option',{value:''},'-- Select Teacher --'),
+            teachers.map(t=>React.createElement('option',{key:t.id,value:t.id},t.name))
+          )
+        )
+      )
+    )
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HOD — BULK IMPORT
+═══════════════════════════════════════════════════════════════ */
+function ImportPage({user,db,save,flash}){
+  const [tab,setTab]=useState('courses');
+  const [csvText,setCsvText]=useState('');
+  const [parsed,setParsed]=useState(null);
+  const [result,setResult]=useState(null);
+  const [dragging,setDragging]=useState(false);
+  const fileRef=useRef();
+  const handleFile=(file)=>{
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=e=>{const t=e.target.result;setCsvText(t);setParsed(parseCSV(t));setResult(null);};
+    reader.readAsText(file);
+  };
+  const runImport=()=>{
+    if(!parsed||!parsed.rows.length){flash('No data to import','error');return;}
+    const res=importData(tab,parsed,db,user.programId);
+    setResult(res);
+    if(res.errors.length===0){save(res.newDb);flash('Import successful! '+parsed.rows.length+' rows processed.');}
+    else flash('Import completed with '+res.errors.length+' error(s).','error');
+  };
+  const tabs=['courses','outcomes','attainment'];
+  const tabLabels={courses:'Courses',outcomes:'Course Outcomes (COs)',attainment:'Attainment Data'};
+  return React.createElement('div',null,
+    React.createElement('div',{className:'card'},
+      React.createElement('div',{className:'card-header'},React.createElement('h3',null,'Bulk Data Import via CSV')),
+      React.createElement('div',{className:'card-body'},
+        React.createElement('div',{className:'tab-strip'},
+          tabs.map(t=>React.createElement('button',{key:t,className:'tab-btn'+(tab===t?' active':''),
+            onClick:()=>{setTab(t);setCsvText('');setParsed(null);setResult(null);}},tabLabels[t]))
+        ),
+        React.createElement('div',{className:'alert alert-info'},
+          'Required columns for ',tabLabels[tab],': ',
+          TEMPLATES[tab].headers.map((h,i)=>React.createElement('code',{key:h,style:{background:'#dbeafe',padding:'1px 5px',borderRadius:3,fontSize:'.8rem',marginRight:4}},h))
+        ),
+        React.createElement('div',{style:{display:'flex',gap:'1rem',marginBottom:'1rem',flexWrap:'wrap'}},
+          React.createElement('button',{className:'btn btn-secondary btn-sm',onClick:()=>downloadTemplate(tab)},React.createElement(Ic,{n:'download',s:14}),'Download Template CSV'),
+          React.createElement('button',{className:'btn btn-secondary btn-sm',onClick:()=>fileRef.current.click()},React.createElement(Ic,{n:'upload',s:14}),'Choose File'),
+          React.createElement('input',{ref:fileRef,type:'file',accept:'.csv,.txt',style:{display:'none'},onChange:e=>handleFile(e.target.files[0])})
+        ),
+        React.createElement('div',{
+          className:'drop-zone'+(dragging?' over':''),
+          onDragOver:e=>{e.preventDefault();setDragging(true);},
+          onDragLeave:()=>setDragging(false),
+          onDrop:e=>{e.preventDefault();setDragging(false);handleFile(e.dataTransfer.files[0]);},
+          onClick:()=>fileRef.current.click(),
+          style:{marginBottom:'1rem'}
+        },
+          React.createElement('div',{style:{fontSize:'2rem',marginBottom:'8px'}},dragging?'⬇':'📄'),
+          React.createElement('div',{style:{fontWeight:500,marginBottom:4}},'Drag & drop CSV file here'),
+          React.createElement('div',{className:'text-sm text-muted'},'or click to browse')
+        ),
+        React.createElement('div',{className:'form-group'},
+          React.createElement('label',null,'Or paste CSV text directly'),
+          React.createElement('textarea',{value:csvText,onChange:e=>{const t=e.target.value;setCsvText(t);setParsed(t.trim()?parseCSV(t):null);setResult(null);},
+            placeholder:'Paste CSV data here...\nFirst line: '+TEMPLATES[tab].headers.join(','),
+            style:{minHeight:120,fontFamily:'monospace',fontSize:'.82rem'}})
+        ),
+        parsed&&parsed.rows.length>0&&React.createElement('div',{style:{marginBottom:'1rem'}},
+          React.createElement('div',{className:'alert alert-info'},parsed.rows.length+' rows detected. Headers: '+parsed.headers.join(', ')),
+          React.createElement('div',{className:'import-preview'},
+            parsed.rows.slice(0,5).map((r,i)=>'Row '+(i+1)+': '+r.join(' | ')).join('\n')+(parsed.rows.length>5?'\n...and '+(parsed.rows.length-5)+' more':'')
+          )
+        ),
+        parsed&&parsed.rows.length>0&&React.createElement('button',{className:'btn btn-success',onClick:runImport,style:{marginTop:'.5rem'}},
+          React.createElement(Ic,{n:'upload',s:16}),'Import '+parsed.rows.length+' Row(s)'),
+        result&&React.createElement('div',{style:{marginTop:'1rem'}},
+          result.errors.length===0&&React.createElement('div',{className:'alert alert-success'},'✓ Import successful!'),
+          result.warnings.length>0&&React.createElement('div',{className:'alert alert-info'},
+            React.createElement('strong',null,'Warnings:'),React.createElement('br',null),
+            result.warnings.map((w,i)=>React.createElement('div',{key:i,style:{fontSize:'.82rem'}},'⚠ '+w))
+          ),
+          result.errors.length>0&&React.createElement('div',{className:'alert alert-error'},
+            React.createElement('strong',null,'Errors:'),React.createElement('br',null),
+            result.errors.map((e,i)=>React.createElement('div',{key:i,style:{fontSize:'.82rem'}},'✗ '+e))
+          )
+        )
+      )
+    ),
+    React.createElement('div',{className:'card'},
+      React.createElement('div',{className:'card-header'},React.createElement('h3',null,'Import Templates Guide')),
+      React.createElement('div',{className:'card-body'},
+        React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:'1rem'}},
+          tabs.map(t=>React.createElement('div',{key:t,style:{padding:'1rem',background:'#f8fafc',borderRadius:8,border:'1px solid var(--border)'}},
+            React.createElement('div',{style:{fontWeight:600,marginBottom:8}},tabLabels[t]),
+            TEMPLATES[t].headers.map(h=>React.createElement('div',{key:h,style:{fontSize:'.78rem',marginBottom:4}},
+              React.createElement('code',{style:{background:'#e0e7ff',padding:'1px 4px',borderRadius:3}},h)
+            )),
+            React.createElement('button',{className:'btn btn-sm btn-secondary',style:{marginTop:8},onClick:()=>downloadTemplate(t)},React.createElement(Ic,{n:'download',s:12}),'Template')
+          ))
+        )
+      )
+    )
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HOD — PO/PSO REPORT
+═══════════════════════════════════════════════════════════════ */
+function ReportsPage({user,db,flash}){
+  const courses=db.courses.filter(c=>c.programId===user.programId);
+  const [cid,setCid]=useState(courses[0]?.id||'');
+  const course=courses.find(c=>c.id===cid);
+  const cos=course?(db.courseOutcomes[course.id]||[]):[];
+  const mapping=course?(db.coPoMapping[course.id]||{}):{};
+  const N=course?.totalStudents||0;
+  const att=db.attainmentData||{};
+  const coaVals=cos.map(co=>{const d=att[course?.id+'_'+co.id]||{};const r=calcCOA(d,N);return{co,coa:r?r.COA:null,r};});
+  const validCOA=coaVals.filter(x=>x.coa!==null);
+  const avgCOA=validCOA.length?validCOA.reduce((s,x)=>s+x.coa,0)/validCOA.length:0;
+  const poAtt=PO_LIST.map(po=>{const M=avgMapping(cos,mapping,po);return{po,M:M?M.toFixed(2):null,att:M?(avgCOA*M/3).toFixed(2):null};});
+  const lc=(v)=>{if(!v)return'#ccc';const n=parseFloat(v);return n>=2?'#16a34a':n>=1.5?'#d97706':'#dc2626';};
+  const doExport=()=>{if(!course){flash('Select a course','error');return;}exportCoursePDF(course,cos,mapping,att,db);flash('PDF exported!');};
+  return React.createElement('div',null,
+    React.createElement('div',{className:'flex-between',style:{marginBottom:'1rem'}},
+      React.createElement('div',{className:'form-group',style:{maxWidth:350,margin:0}},
+        React.createElement('select',{value:cid,onChange:e=>setCid(e.target.value)},
+          courses.length===0?React.createElement('option',null,'No courses'):
+          courses.map(c=>{const t=db.users.find(u=>u.id===c.teacherId);return React.createElement('option',{key:c.id,value:c.id},c.code+' - '+c.name+(t?' ('+t.name+')':''));})
+        )
+      ),
+      course&&React.createElement('button',{className:'btn btn-primary',onClick:doExport},React.createElement(Ic,{n:'download',s:16}),'Export Full PDF')
+    ),
+    cos.length===0?React.createElement('div',{className:'card'},React.createElement('div',{className:'empty-state'},'No COs defined for this course.')):
+    React.createElement('div',null,
+      React.createElement('div',{className:'card',style:{marginBottom:'1rem'}},
+        React.createElement('div',{className:'card-header'},React.createElement('h3',null,'CO Attainment Summary')),
+        React.createElement('div',{style:{overflowX:'auto'}},
+          React.createElement('table',null,
+            React.createElement('thead',null,React.createElement('tr',null,['CO','Description','a (CT-1)','b (CT-2)','e (Assign)','c (ESE)','d (Survey)','CIA','DA','IA','COA'].map(h=>React.createElement('th',{key:h},h)))),
+            React.createElement('tbody',null,
+              coaVals.map(({co,coa,r})=>React.createElement('tr',{key:co.id},
+                React.createElement('td',null,React.createElement('span',{className:'badge badge-teal'},co.label)),
+                React.createElement('td',{style:{maxWidth:200,fontSize:'.8rem'}},co.desc),
+                ...(r?[r.a,r.b,r.e,r.c,r.d,r.CIA.toFixed(2),r.DA.toFixed(2),r.IA,r.COA.toFixed(2)].map((v,i)=>
+                  React.createElement('td',{key:i,style:{textAlign:'center',fontWeight:i===8?600:'',color:i===8?(coa>=2.5?'#16a34a':coa>=1.5?'#d97706':'#dc2626'):''}},v))
+                :[...Array(9)].map((_,i)=>React.createElement('td',{key:i,style:{textAlign:'center',color:'#ccc'}},'—')))
+              ))
+            )
+          )
+        )
+      ),
+      React.createElement('div',{className:'card'},
+        React.createElement('div',{className:'card-header'},
+          React.createElement('h3',null,'PO/PSO Attainment'),
+          React.createElement('span',{className:'text-sm text-muted'},'Avg COA = '+avgCOA.toFixed(2)+' | Formula: COA × M/3')
+        ),
+        React.createElement('div',{style:{overflowX:'auto'}},
+          React.createElement('table',null,
+            React.createElement('thead',null,React.createElement('tr',null,['PO/PSO','Avg Mapping (M)','Attainment Level'].map(h=>React.createElement('th',{key:h},h)))),
+            React.createElement('tbody',null,
+              poAtt.map(({po,M,att})=>React.createElement('tr',{key:po},
+                React.createElement('td',null,React.createElement('span',{className:'badge badge-blue'},po)),
+                React.createElement('td',{style:{textAlign:'center'}},M||React.createElement('span',{className:'text-muted text-sm'},'No mapping')),
+                React.createElement('td',null,att?React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8}},
+                  React.createElement('div',{style:{width:80,height:8,background:'#e2e8f0',borderRadius:4,overflow:'hidden'}},
+                    React.createElement('div',{style:{width:Math.min(parseFloat(att)/3*100,100)+'%',height:'100%',background:lc(att),borderRadius:4}})
+                  ),
+                  React.createElement('span',{style:{fontWeight:600,color:lc(att)}},att)
+                ):React.createElement('span',{className:'text-muted text-sm'},'—'))
+              ))
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TEACHER — MY COURSES
+═══════════════════════════════════════════════════════════════ */
+function MyCoursesPage({user,db,save,flash}){
+  const [selC,setSelC]=useState(null);
+  const [showAdd,setShowAdd]=useState(false);
+  const [coForm,setCoForm]=useState({label:'',desc:''});
+  const myCourses=db.courses.filter(c=>c.teacherId===user.id);
+  const addCO=()=>{
+    if(!selC||!coForm.label||!coForm.desc){flash('Fill all fields','error');return;}
+    const cos=db.courseOutcomes[selC.id]||[];
+    save({...db,courseOutcomes:{...db.courseOutcomes,[selC.id]:[...cos,{id:'co'+Date.now(),...coForm}]}});
+    flash('CO added');setShowAdd(false);setCoForm({label:'',desc:''});
+  };
+  const delCO=(cid,coid)=>{
+    const cos=(db.courseOutcomes[cid]||[]).filter(c=>c.id!==coid);
+    save({...db,courseOutcomes:{...db.courseOutcomes,[cid]:cos}});
+  };
+  if(!myCourses.length) return React.createElement('div',{className:'card'},React.createElement('div',{className:'empty-state'},'No courses assigned. Contact your HOD.'));
+  return React.createElement('div',null,
+    myCourses.map(course=>{
+      const cos=db.courseOutcomes[course.id]||[];
+      return React.createElement('div',{key:course.id,className:'card'},
+        React.createElement('div',{className:'card-header'},
+          React.createElement('div',null,
+            React.createElement('span',{className:'tag',style:{marginRight:8}},course.code),
+            React.createElement('strong',null,course.name),
+            React.createElement('span',{className:'text-muted text-sm',style:{marginLeft:8}},'Sem: '+course.semester+' | Students: '+course.totalStudents)
+          ),
+          React.createElement('button',{className:'btn btn-sm btn-primary',onClick:()=>{setSelC(course);setShowAdd(true);}},React.createElement(Ic,{n:'plus',s:14}),'Add CO')
+        ),
+        React.createElement('div',{style:{overflowX:'auto'}},
+          React.createElement('table',null,
+            React.createElement('thead',null,React.createElement('tr',null,['CO','Description','Action'].map(h=>React.createElement('th',{key:h},h)))),
+            React.createElement('tbody',null,
+              !cos.length?React.createElement('tr',null,React.createElement('td',{colSpan:3,style:{textAlign:'center',padding:'1.5rem',color:'#718096'}},'No COs defined yet. Click "Add CO" to start.')):
+              cos.map(co=>React.createElement('tr',{key:co.id},
+                React.createElement('td',null,React.createElement('span',{className:'badge badge-teal'},co.label)),
+                React.createElement('td',null,co.desc),
+                React.createElement('td',null,React.createElement('button',{className:'btn btn-sm btn-danger',onClick:()=>delCO(course.id,co.id)},'Remove'))
+              ))
+            )
+          )
+        )
+      );
+    }),
+    showAdd&&React.createElement(Modal,{title:'Add CO — '+selC?.name,onClose:()=>setShowAdd(false),
+      footer:[React.createElement('button',{key:'c',className:'btn btn-secondary',onClick:()=>setShowAdd(false)},'Cancel'),React.createElement('button',{key:'a',className:'btn btn-primary',onClick:addCO},'Add CO')]},
+      React.createElement('div',{className:'form-group'},React.createElement('label',null,'CO Label (e.g. CO1, CO2)'),React.createElement('input',{type:'text',value:coForm.label,onChange:e=>setCoForm({...coForm,label:e.target.value})})),
+      React.createElement('div',{className:'form-group'},React.createElement('label',null,'CO Description'),React.createElement('input',{type:'text',placeholder:'Students will be able to...',value:coForm.desc,onChange:e=>setCoForm({...coForm,desc:e.target.value})}))
+    )
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TEACHER — CO-PO MAPPING
+═══════════════════════════════════════════════════════════════ */
+function COPOMappingPage({user,db,save,flash}){
+  const myCourses=db.courses.filter(c=>c.teacherId===user.id);
+  const [cid,setCid]=useState(myCourses[0]?.id||'');
+  const course=myCourses.find(c=>c.id===cid);
+  const cos=course?(db.courseOutcomes[course.id]||[]):[];
+  const mapping=course?(db.coPoMapping[course.id]||{}):{};
+  const getV=(coId,po)=>{const v=(mapping[coId]||{})[po];return(v==='-'||v===undefined)?'':String(v);};
+  const setV=(coId,po,val)=>{
+    const p=val===''?'-':(parseInt(val)||'-');
+    if(p!=='-'&&(p<1||p>3))return;
+    save({...db,coPoMapping:{...db.coPoMapping,[course.id]:{...mapping,[coId]:{...(mapping[coId]||{}),[po]:p}}}});
+  };
+  const calcAvg=(po)=>{let s=0,n=0;cos.forEach(co=>{const v=(mapping[co.id]||{})[po];if(v&&v!=='-'){s+=parseFloat(v);n++;}});return n>0?(s/n).toFixed(2):'-';};
+  if(!myCourses.length) return React.createElement('div',{className:'card'},React.createElement('div',{className:'empty-state'},'No courses assigned.'));
+  return React.createElement('div',null,
+    React.createElement('div',{className:'form-group',style:{maxWidth:300,marginBottom:'1rem'}},
+      React.createElement('select',{value:cid,onChange:e=>setCid(e.target.value)},
+        myCourses.map(c=>React.createElement('option',{key:c.id,value:c.id},c.code+' — '+c.name))
+      )
+    ),
+    cos.length===0?React.createElement('div',{className:'card'},React.createElement('div',{className:'empty-state'},'Define Course Outcomes first in "My Courses".')):
+    React.createElement('div',{className:'card'},
+      React.createElement('div',{className:'card-header'},
+        React.createElement('h3',null,'CO-PO / PSO Mapping Matrix'),
+        React.createElement('div',{style:{display:'flex',gap:8,flexWrap:'wrap'}},
+          React.createElement('span',{className:'badge badge-green'},'3 = High'),
+          React.createElement('span',{className:'badge badge-amber'},'2 = Medium'),
+          React.createElement('span',{className:'badge badge-red'},'1 = Low'),
+          React.createElement('span',{className:'badge badge-teal'},'blank = No correlation')
+        )
+      ),
+      React.createElement('div',{className:'co-po-table'},
+        React.createElement('table',null,
+          React.createElement('thead',null,React.createElement('tr',null,
+            React.createElement('th',null,'CO'),...PO_LIST.map(po=>React.createElement('th',{key:po,style:{textAlign:'center'}},po))
+          )),
+          React.createElement('tbody',null,
+            cos.map(co=>React.createElement('tr',{key:co.id},
+              React.createElement('td',null,
+                React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:2}},
+                  React.createElement('span',{className:'badge badge-teal'},co.label),
+                  React.createElement('span',{style:{fontSize:'.72rem',color:'#718096',maxWidth:120}},co.desc)
+                )
+              ),
+              ...PO_LIST.map(po=>React.createElement('td',{key:po,className:'co-po-cell',style:{textAlign:'center'}},
+                React.createElement('input',{type:'number',min:1,max:3,value:getV(co.id,po),onChange:e=>setV(co.id,po,e.target.value)})
+              ))
+            )),
+            React.createElement('tr',{style:{background:'#eff6ff'}},
+              React.createElement('td',null,React.createElement('strong',{style:{fontSize:'.82rem'}},'Average')),
+              ...PO_LIST.map(po=>{const a=calcAvg(po);return React.createElement('td',{key:po,style:{textAlign:'center',fontWeight:600,fontSize:'.85rem',color:a!=='-'?'#2563eb':'#ccc'}},a);})
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TEACHER — CO ATTAINMENT
+═══════════════════════════════════════════════════════════════ */
+function AttainmentPage({user,db,save,flash}){
+  const myCourses=db.courses.filter(c=>c.teacherId===user.id);
+  const [cid,setCid]=useState(myCourses[0]?.id||'');
+  const course=myCourses.find(c=>c.id===cid);
+  const cos=course?(db.courseOutcomes[course.id]||[]):[];
+  const N=course?.totalStudents||0;
+  const att=db.attainmentData||{};
+  const getD=(coId)=>att[course?.id+'_'+coId]||{cia1_p:'',cia2_p:'',assign_p:'',ese_p:'',survey:0};
+  const setD=(coId,field,val)=>{
+    const key=course.id+'_'+coId;
+    const cur=getD(coId);
+    const nv=field==='survey'?parseInt(val)||0:(val===''?'':parseInt(val)||0);
+    save({...db,attainmentData:{...att,[key]:{...cur,[field]:nv}}});
+  };
+  const lc=(l)=>l===3?'level-high':l===2?'level-mid':l===1?'level-low':'text-muted';
+  if(!myCourses.length) return React.createElement('div',{className:'card'},React.createElement('div',{className:'empty-state'},'No courses assigned.'));
+  return React.createElement('div',null,
+    React.createElement('div',{className:'form-group',style:{maxWidth:300,marginBottom:'1rem'}},
+      React.createElement('select',{value:cid,onChange:e=>setCid(e.target.value)},
+        myCourses.map(c=>React.createElement('option',{key:c.id,value:c.id},c.code+' — '+c.name))
+      )
+    ),
+    cos.length===0&&React.createElement('div',{className:'card'},React.createElement('div',{className:'empty-state'},'Define COs first in "My Courses".')),
+    cos.length>0&&React.createElement('div',null,
+      React.createElement('div',{className:'card',style:{marginBottom:'1rem'}},
+        React.createElement('div',{className:'card-body'},
+          React.createElement('span',{className:'text-sm text-muted'},'Target: students scoring ≥60% | N = '+N+' | Levels: 3→>80%, 2→>70%, 1→>60% | CIA = avg(CT-1, CT-2, Assignments)')
+        )
+      ),
+      cos.map(co=>{
+        const d=getD(co.id);
+        const r=calcCOA(d,N);
+        return React.createElement('div',{key:co.id,className:'card attainment-table',style:{marginBottom:'1rem'}},
+          React.createElement('div',{className:'card-header'},
+            React.createElement('div',null,
+              React.createElement('span',{className:'badge badge-teal',style:{marginRight:8}},co.label),
+              React.createElement('strong',null,co.desc)
+            ),
+            r&&React.createElement('span',{className:'badge '+(r.COA>=2.5?'badge-green':r.COA>=1.5?'badge-amber':'badge-red')},'COA: '+r.COA.toFixed(2))
+          ),
+          React.createElement('div',{style:{overflowX:'auto'}},
+            React.createElement('table',null,
+              React.createElement('thead',null,React.createElement('tr',null,
+                ['','CT-1 (Internal 1)','CT-2 (Internal 2)','Assignments (Internal 3)','ESE (End Semester)','Exit Survey (1-3)'].map(h=>React.createElement('th',{key:h},h))
+              )),
+              React.createElement('tbody',null,
+                React.createElement('tr',null,
+                  React.createElement('td',null,React.createElement('span',{className:'text-sm text-muted'},'No. of students scoring >60% (P)')),
+                  React.createElement('td',null,React.createElement('input',{type:'number',min:0,max:N,value:d.cia1_p,onChange:e=>setD(co.id,'cia1_p',e.target.value),placeholder:'P'})),
+                  React.createElement('td',null,React.createElement('input',{type:'number',min:0,max:N,value:d.cia2_p,onChange:e=>setD(co.id,'cia2_p',e.target.value),placeholder:'P'})),
+                  React.createElement('td',null,React.createElement('input',{type:'number',min:0,max:N,value:d.assign_p,onChange:e=>setD(co.id,'assign_p',e.target.value),placeholder:'P'})),
+                  React.createElement('td',null,React.createElement('input',{type:'number',min:0,max:N,value:d.ese_p,onChange:e=>setD(co.id,'ese_p',e.target.value),placeholder:'P'})),
+                  React.createElement('td',null,
+                    React.createElement('select',{value:d.survey||0,onChange:e=>setD(co.id,'survey',e.target.value),
+                      style:{padding:'.3rem .5rem',border:'1.5px solid var(--border)',borderRadius:6,fontFamily:'DM Sans, sans-serif',fontSize:'.85rem',background:'#fff'}},
+                      React.createElement('option',{value:0},'-- Select --'),
+                      [1,2,3].map(v=>React.createElement('option',{key:v,value:v},v===1?'1 - Low':v===2?'2 - Moderate':'3 - High'))
+                    )
+                  )
+                ),
+                r&&React.createElement('tr',{style:{background:'#f8fafc'}},
+                  React.createElement('td',null,React.createElement('strong',{style:{fontSize:'.8rem'}},'% Achieved / Level')),
+                  React.createElement('td',null,React.createElement('div',null,((d.cia1_p/N)*100).toFixed(1)+'%'),React.createElement('span',{className:lc(r.a)},'Level '+r.a)),
+                  React.createElement('td',null,React.createElement('div',null,((d.cia2_p/N)*100).toFixed(1)+'%'),React.createElement('span',{className:lc(r.b)},'Level '+r.b)),
+                  React.createElement('td',null,React.createElement('div',null,((d.assign_p/N)*100).toFixed(1)+'%'),React.createElement('span',{className:lc(r.e)},'Level '+r.e)),
+                  React.createElement('td',null,React.createElement('div',null,((d.ese_p/N)*100).toFixed(1)+'%'),React.createElement('span',{className:lc(r.c)},'Level '+r.c)),
+                  React.createElement('td',null,React.createElement('span',{className:lc(r.d)},'Level '+r.d))
+                ),
+                r&&React.createElement('tr',{style:{background:'#eff6ff',fontWeight:500}},
+                  React.createElement('td',{colSpan:2},'CIA = ('+r.a+'+'+r.b+'+'+r.e+')/3 = '+r.CIA.toFixed(2)),
+                  React.createElement('td',{colSpan:2},'DA = 0.4×'+r.CIA.toFixed(2)+' + 0.6×'+r.c+' = '+r.DA.toFixed(2)),
+                  React.createElement('td',{colSpan:2},'COA = 0.8×'+r.DA.toFixed(2)+' + 0.2×'+r.d+' = '+r.COA.toFixed(2))
+                )
+              )
+            )
+          )
+        );
+      })
+    )
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TEACHER — EXPORT PDF
+═══════════════════════════════════════════════════════════════ */
+function ExportPage({user,db,flash}){
+  const myCourses=db.courses.filter(c=>c.teacherId===user.id);
+  const [cid,setCid]=useState(myCourses[0]?.id||'');
+  const [exporting,setExporting]=useState(false);
+  const course=myCourses.find(c=>c.id===cid);
+  const cos=course?(db.courseOutcomes[course.id]||[]):[];
+  const mapping=course?(db.coPoMapping[course.id]||{}):{};
+  const att=db.attainmentData||{};
+  const coaVals=cos.map(co=>{const d=att[course?.id+'_'+co.id]||{};const r=calcCOA(d,course?.totalStudents||0);return r?r.COA:null;}).filter(v=>v!==null);
+  const avgCOA=coaVals.length?coaVals.reduce((s,v)=>s+v,0)/coaVals.length:0;
+  const doExport=()=>{
+    if(!course){flash('Select a course','error');return;}
+    setExporting(true);
+    setTimeout(()=>{
+      try{exportCoursePDF(course,cos,mapping,att,db);flash('PDF downloaded successfully!');}
+      catch(e){flash('Export failed: '+e.message,'error');}
+      setExporting(false);
+    },100);
+  };
+  return React.createElement('div',null,
+    React.createElement('div',{className:'form-group',style:{maxWidth:400,marginBottom:'1rem'}},
+      React.createElement('label',null,'Select Course'),
+      React.createElement('select',{value:cid,onChange:e=>setCid(e.target.value)},
+        myCourses.length===0?React.createElement('option',null,'No courses assigned'):
+        myCourses.map(c=>React.createElement('option',{key:c.id,value:c.id},c.code+' — '+c.name))
+      )
+    ),
+    course&&React.createElement('div',{className:'card',style:{marginBottom:'1rem'}},
+      React.createElement('div',{className:'card-header'},React.createElement('h3',null,'Course Summary')),
+      React.createElement('div',{className:'card-body'},
+        React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))',gap:'1rem'}},
+          [{l:'Code',v:course.code},{l:'Semester',v:course.semester},{l:'Students (N)',v:course.totalStudents},{l:'COs Defined',v:cos.length},{l:'COs Mapped',v:Object.keys(mapping).length},{l:'Avg COA',v:coaVals.length?avgCOA.toFixed(2):'Incomplete'}]
+            .map(({l,v})=>React.createElement('div',{key:l,style:{padding:'.75rem',background:'#f8fafc',borderRadius:8,border:'1px solid var(--border)'}},
+              React.createElement('div',{style:{fontSize:'.72rem',color:'#718096',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em'}},l),
+              React.createElement('div',{style:{fontWeight:600,fontSize:'1.1rem',marginTop:4}},v)
+            ))
+        )
+      )
+    ),
+    React.createElement('div',{className:'card'},
+      React.createElement('div',{className:'card-header'},React.createElement('h3',null,'Export Options')),
+      React.createElement('div',{className:'card-body'},
+        React.createElement('div',{className:'export-option'},
+          React.createElement('div',null,
+            React.createElement('div',{className:'label'},'Full CO-PO Attainment Report (PDF)'),
+            React.createElement('div',{className:'desc'},'4-page landscape PDF: Course Outcomes → CO-PO Matrix → CO Attainment Calculations → PO/PSO Attainment Levels')
+          ),
+          React.createElement('button',{className:'btn btn-primary',onClick:doExport,disabled:exporting},React.createElement(Ic,{n:'download',s:16}),exporting?'Generating…':'Export PDF')
+        ),
+        React.createElement('div',{style:{marginTop:'1.25rem'}},
+          React.createElement('div',{style:{fontWeight:600,marginBottom:'.75rem',fontSize:'.88rem'}},'CSV Import Templates'),
+          ['courses','outcomes','attainment'].map(t=>
+            React.createElement('div',{key:t,className:'export-option'},
+              React.createElement('div',null,
+                React.createElement('div',{className:'label'},TEMPLATES[t].headers.join(', ')),
+                React.createElement('div',{className:'desc'},'template_'+t+'.csv')
+              ),
+              React.createElement('button',{className:'btn btn-sm btn-secondary',onClick:()=>downloadTemplate(t)},React.createElement(Ic,{n:'download',s:14}),'Download')
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN APP
+═══════════════════════════════════════════════════════════════ */
+function App(){
+  const [db,setDb]=useState(getDB);
+  const [user,setUser]=useState(null);
+  const [page,setPage]=useState('dashboard');
+  const [flashMsg,setFlashMsg]=useState(null);
+
+  const save=(nd)=>{setDb(nd);setDB(nd);};
+  const flash=(msg,type='success')=>{setFlashMsg({msg,type});setTimeout(()=>setFlashMsg(null),3500);};
+
+  if(!user) return React.createElement(LoginPage,{db,onLogin:u=>{setUser(u);setPage('dashboard');}});
+
+  const navItems=user.role==='admin'?[
+    {id:'dashboard',label:'Dashboard',icon:'home'},
+    {id:'programs',label:'Programmes',icon:'programs'},
+    {id:'hods',label:'HOD Management',icon:'users'},
+  ]:user.role==='hod'?[
+    {id:'dashboard',label:'Dashboard',icon:'home'},
+    {id:'teachers',label:'Teachers',icon:'users'},
+    {id:'courses',label:'Courses',icon:'courses'},
+    {id:'import',label:'Bulk Import',icon:'upload'},
+    {id:'reports',label:'PO Attainment',icon:'attainment'},
+  ]:[
+    {id:'dashboard',label:'Dashboard',icon:'home'},
+    {id:'my-courses',label:'My Courses',icon:'courses'},
+    {id:'co-po',label:'CO-PO Mapping',icon:'mapping'},
+    {id:'attainment',label:'CO Attainment',icon:'attainment'},
+    {id:'export',label:'Export PDF',icon:'download'},
+  ];
+
+  const pageMap={
+    dashboard:DashboardPage,programs:ProgramsPage,hods:HODsPage,
+    teachers:TeachersPage,courses:CoursesPage,import:ImportPage,reports:ReportsPage,
+    'my-courses':MyCoursesPage,'co-po':COPOMappingPage,attainment:AttainmentPage,export:ExportPage
+  };
+  const titles={
+    dashboard:'Dashboard',programs:'Programme Management',hods:'HOD Management',
+    teachers:'Teacher Management',courses:'Course Management',import:'Bulk Import',
+    reports:'PO/PSO Attainment Report','my-courses':'My Courses',
+    'co-po':'CO-PO Mapping',attainment:'CO Attainment Calculation',export:'Export Reports'
+  };
+  const Comp=pageMap[page]||DashboardPage;
+
+  return React.createElement('div',{className:'layout'},
+    React.createElement('div',{className:'sidebar'},
+      React.createElement('div',{className:'sidebar-header'},
+        React.createElement('div',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:8}},
+          React.createElement('img',{src:BIET_LOGO,alt:'BIET',style:{width:36,height:36,objectFit:'contain',flexShrink:0}}),
+          React.createElement('div',null,
+            React.createElement('div',{style:{fontFamily:"'DM Serif Display',serif",fontSize:'.95rem',lineHeight:1.2}},'CO-PO Portal'),
+            React.createElement('div',{style:{fontSize:'.62rem',opacity:.65,letterSpacing:'.05em',textTransform:'uppercase',marginTop:2}},'Outcome Attainment System')
+          )
+        ),
+        React.createElement('div',{style:{fontSize:'.65rem',opacity:.55,lineHeight:1.4}},'Bundelkhand Institute of Engineering & Technology, Jhansi')
+      ),
+      React.createElement('div',{className:'sidebar-user'},
+        React.createElement('div',{className:'role-badge'},user.role.toUpperCase()),
+        React.createElement('div',{className:'name'},user.name)
+      ),
+      React.createElement('div',{className:'sidebar-nav'},
+        navItems.map(item=>
+          React.createElement('button',{key:item.id,className:'nav-item'+(page===item.id?' active':''),onClick:()=>setPage(item.id)},
+            React.createElement(Ic,{n:item.icon}),item.label
+          )
+        )
+      ),
+      React.createElement('div',{className:'sidebar-footer'},
+        React.createElement('button',{className:'nav-item',style:{color:'rgba(255,150,150,0.9)'},onClick:()=>setUser(null)},
+          React.createElement(Ic,{n:'logout'}),'Sign Out'
+        )
+      )
+    ),
+    React.createElement('div',{className:'main'},
+      flashMsg&&React.createElement('div',{className:'alert alert-'+flashMsg.type,style:{margin:'.75rem 1.5rem 0'}},flashMsg.msg),
+      React.createElement('div',{className:'inst-bar'},
+        React.createElement('img',{src:BIET_LOGO,alt:'BIET Logo'}),
+        React.createElement('div',{className:'inst-bar-text'},
+          React.createElement('div',{className:'inst-name'},'Bundelkhand Institute of Engineering & Technology, Jhansi'),
+          React.createElement('div',{className:'inst-sub'},'CO-PO Attainment Portal — Outcome Based Education')
+        )
+      ),
+      React.createElement('div',{className:'main-header'},React.createElement('h1',null,titles[page]||'Dashboard')),
+      React.createElement('div',{className:'content'},React.createElement(Comp,{user,db,save,flash}))
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>

@@ -129,6 +129,20 @@
   .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500;}
   .import-preview{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;font-size:.78rem;font-family:monospace;padding:.75rem;background:#f8fafc;white-space:pre-wrap;color:var(--text2);}
   .export-option{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border:1px solid var(--border);border-radius:8px;background:var(--surface2);margin-bottom:.75rem;}
+  .eval-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;}
+  .eval-tab{padding:.4rem .9rem;border-radius:20px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:.82rem;font-family:'DM Sans',sans-serif;color:var(--text2);font-weight:500;transition:all .15s;}
+  .eval-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .eval-tab.done{border-color:var(--green);color:var(--green);}
+  .eval-tab.active.done{background:var(--green);color:#fff;border-color:var(--green);}
+  .marks-table{overflow-x:auto;max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;}
+  .marks-table table{min-width:400px;}
+  .marks-table th{position:sticky;top:0;z-index:2;background:var(--surface2);}
+  .upload-zone{border:2px dashed var(--border);border-radius:10px;padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa;}
+  .upload-zone:hover{border-color:var(--accent);background:var(--accent-light);}
+  .progress-ring{display:inline-flex;align-items:center;gap:8px;font-size:.82rem;font-weight:500;}
+  .co-weight-row{display:flex;align-items:center;gap:10px;padding:.5rem 0;border-bottom:1px solid var(--border);}
+  .co-weight-row:last-child{border-bottom:none;}
+  .co-weight-input{width:70px;padding:.3rem .5rem;border:1.5px solid var(--border);border-radius:6px;text-align:center;font-family:'DM Sans',sans-serif;font-size:.85rem;}
   .export-option .label{font-size:.88rem;font-weight:500;}
   .export-option .desc{font-size:.78rem;color:var(--text3);margin-top:2px;}
   /* Responsive */
@@ -949,7 +963,12 @@ function ReportsPage({user,db,flash}){
   const mapping=course?(db.coPoMapping[course.id]||{}):{};
   const N=course?.totalStudents||0;
   const att=db.attainmentData||{};
-  const coaVals=cos.map(co=>{const d=att[course?.id+'_'+co.id]||{};const r=calcCOA(d,N);return{co,coa:r?r.COA:null,r};});
+  const coaVals=cos.map(co=>{
+    const d=att[course?.id+'_'+co.id]||{};
+    if(d._coa!==undefined) return{co,coa:d._coa,r:calcCOA(d,N)||{a:'-',b:'-',e:'-',c:'-',d:0,CIA:0,DA:0,IA:0,COA:d._coa}};
+    const r=calcCOA(d,N);
+    return{co,coa:r?r.COA:null,r};
+  });
   const validCOA=coaVals.filter(x=>x.coa!==null);
   const avgCOA=validCOA.length?validCOA.reduce((s,x)=>s+x.coa,0)/validCOA.length:0;
   const poAtt=PO_LIST.map(po=>{const M=avgMapping(cos,mapping,po);return{po,M:M?M.toFixed(2):null,att:M?(avgCOA*M/3).toFixed(2):null};});
@@ -1128,90 +1147,434 @@ function COPOMappingPage({user,db,save,flash}){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TEACHER — CO ATTAINMENT
+   TEACHER — CO ATTAINMENT (CSV MARKS UPLOAD)
 ═══════════════════════════════════════════════════════════════ */
+
+/* Evaluation types */
+const EVALS=[
+  {key:'ct1',  label:'CT-1',         short:'CT-1 (Internal 1)'},
+  {key:'ct2',  label:'CT-2',         short:'CT-2 (Internal 2)'},
+  {key:'assign',label:'Assignments', short:'Assignments (Internal 3)'},
+  {key:'ese',  label:'ESE',          short:'ESE (End Semester)'},
+];
+
+/* Parse a CSV text → [{roll, name, marks}] */
+function parseMarkCSV(text){
+  const lines=text.trim().split('\n').map(l=>l.split(',').map(c=>c.trim().replace(/^"|"$/g,'')));
+  if(lines.length<2) return{ok:false,msg:'File is empty or has only header row',rows:[]};
+  const hdr=lines[0].map(h=>h.toLowerCase());
+  const rollIdx=hdr.findIndex(h=>h.includes('roll')||h==='id'||h==='no');
+  const nameIdx=hdr.findIndex(h=>h.includes('name'));
+  const maxIdx =hdr.findIndex(h=>h.includes('max')||h.includes('total')||h.includes('out of'));
+  const markIdx=hdr.findIndex(h=>h.includes('mark')||h.includes('score')||h.includes('obtain'));
+  if(markIdx===-1) return{ok:false,msg:'CSV must have a column with "marks", "score", or "obtained" in the header',rows:[]};
+  if(maxIdx===-1)  return{ok:false,msg:'CSV must have a column with "max", "total", or "out of" in the header',rows:[]};
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const row=lines[i];
+    if(!row.some(c=>c)) continue;
+    const marks=parseFloat(row[markIdx]);
+    const max=parseFloat(row[maxIdx]);
+    if(isNaN(marks)||isNaN(max)||max<=0) continue;
+    rows.push({
+      roll: rollIdx>=0?row[rollIdx]:'S'+(i),
+      name: nameIdx>=0?row[nameIdx]:'Student '+(i),
+      marks, max,
+      pct: (marks/max)*100
+    });
+  }
+  if(!rows.length) return{ok:false,msg:'No valid mark rows found. Check your CSV format.',rows:[]};
+  return{ok:true,msg:'',rows};
+}
+
+/* Compute how many students scored >= target% */
+function countPass(rows, targetPct){ return rows.filter(r=>r.pct>=targetPct).length; }
+
+/* CO weight configuration modal */
+function COWeightModal({cos, evalKey, evalLabel, weights, onSave, onClose}){
+  const [w,setW]=useState(weights||{});
+  const total=cos.reduce((s,co)=>s+(parseFloat(w[co.id])||0),0);
+  return React.createElement(Modal,{title:'CO Weightage for '+evalLabel,onClose:onClose,
+    footer:[
+      React.createElement('button',{key:'c',className:'btn btn-secondary',onClick:onClose},'Cancel'),
+      React.createElement('button',{key:'s',className:'btn btn-primary',onClick:()=>onSave(w)},
+        Math.abs(total-100)<0.01?'Save Weights':'Save (total='+total.toFixed(0)+'%, ideally 100%)')
+    ]},
+    React.createElement('div',{style:{marginBottom:'1rem',fontSize:'.82rem',color:'#64748b'}},
+      'Assign % weightage for each CO in this evaluation. Total should ideally be 100%.'),
+    cos.map(co=>React.createElement('div',{key:co.id,className:'co-weight-row'},
+      React.createElement('span',{className:'badge badge-teal',style:{minWidth:40}},co.label),
+      React.createElement('span',{style:{flex:1,fontSize:'.83rem'}},co.desc),
+      React.createElement('input',{type:'number',min:0,max:100,className:'co-weight-input',
+        value:w[co.id]||'',placeholder:'%',
+        onChange:e=>setW({...w,[co.id]:e.target.value})})
+    ))
+  );
+}
+
+/* Single evaluation upload panel */
+function EvalUploadPanel({evalKey,evalLabel,cos,courseId,marksData,weightsData,targetPct,onSaveMarks,onSaveWeights,flash}){
+  const [tab,setTab]=useState('upload'); // 'upload' | 'preview' | 'co'
+  const [csvText,setCsvText]=useState('');
+  const [parsed,setParsed]=useState(null);
+  const [parseErr,setParseErr]=useState('');
+  const [showWeights,setShowWeights]=useState(false);
+  const [dragging,setDragging]=useState(false);
+  const fileRef=useRef();
+
+  const storedRows = marksData[courseId+'_'+evalKey]||[];
+  const weights    = weightsData[courseId+'_'+evalKey]||{};
+
+  const handleFile=(file)=>{
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=e=>handleText(e.target.result);
+    reader.readAsText(file);
+  };
+  const handleText=(text)=>{
+    setCsvText(text);
+    const res=parseMarkCSV(text);
+    if(!res.ok){setParseErr(res.msg);setParsed(null);}
+    else{setParseErr('');setParsed(res.rows);}
+  };
+
+  const saveMarks=()=>{
+    if(!parsed||!parsed.length){flash('No valid data to save','error');return;}
+    onSaveMarks(evalKey, parsed);
+    flash(evalLabel+': '+parsed.length+' student marks saved!');
+    setTab('preview');
+  };
+
+  const rows = parsed||storedRows;
+  const passCount = rows.length ? countPass(rows, targetPct) : (storedRows.length?countPass(storedRows,targetPct):0);
+  const hasData = storedRows.length>0;
+
+  return React.createElement('div',{className:'card',style:{marginBottom:'1rem'}},
+    React.createElement('div',{className:'card-header'},
+      React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8}},
+        React.createElement('span',{className:'badge badge-blue'},evalLabel),
+        hasData&&React.createElement('span',{className:'badge badge-green'},storedRows.length+' students uploaded'),
+        hasData&&React.createElement('span',{className:'badge badge-amber'},'Pass: '+countPass(storedRows,targetPct)+'/'+storedRows.length)
+      ),
+      React.createElement('div',{style:{display:'flex',gap:6}},
+        React.createElement('button',{className:'btn btn-sm btn-secondary',onClick:()=>setShowWeights(true)},
+          'CO Weights '+(Object.keys(weights).length?'✓':'(not set)')),
+        React.createElement('button',{className:'btn btn-sm btn-secondary btn-primary',onClick:()=>fileRef.current.click()},
+          React.createElement('span',{style:{width:14,height:14,display:'inline-flex'},dangerouslySetInnerHTML:{__html:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>'}}),
+          'Upload CSV'),
+        React.createElement('input',{ref:fileRef,type:'file',accept:'.csv,.txt',style:{display:'none'},onChange:e=>handleFile(e.target.files[0])})
+      )
+    ),
+    React.createElement('div',{className:'card-body'},
+      /* Template hint */
+      React.createElement('div',{className:'alert alert-info',style:{marginBottom:'1rem',fontSize:'.8rem'}},
+        React.createElement('strong',null,'CSV format required: '),
+        'roll_no, student_name, max_marks, marks_obtained',
+        React.createElement('br',null),
+        React.createElement('span',{style:{color:'#64748b'}},'Example: 2101001, Rahul Sharma, 30, 24')
+      ),
+      /* Drop zone */
+      React.createElement('div',{
+        className:'upload-zone',
+        style:{marginBottom:'1rem'},
+        onDragOver:e=>{e.preventDefault();setDragging(true);},
+        onDragLeave:()=>setDragging(false),
+        onDrop:e=>{e.preventDefault();setDragging(false);handleFile(e.dataTransfer.files[0]);},
+        onClick:()=>fileRef.current.click()
+      },
+        React.createElement('div',{style:{fontSize:'1.8rem',marginBottom:6}},dragging?'⬇':'📊'),
+        React.createElement('div',{style:{fontWeight:500,fontSize:'.88rem'}},'Drag & drop '+evalLabel+' marks CSV'),
+        React.createElement('div',{style:{fontSize:'.78rem',color:'#94a3b8',marginTop:4}},'or click to browse')
+      ),
+      /* Paste area */
+      React.createElement('div',{className:'form-group'},
+        React.createElement('label',null,'Or paste CSV data directly'),
+        React.createElement('textarea',{
+          value:csvText,
+          onChange:e=>handleText(e.target.value),
+          placeholder:'roll_no,student_name,max_marks,marks_obtained\n2101001,Rahul Sharma,30,24\n2101002,Priya Singh,30,19\n...',
+          style:{minHeight:100,fontFamily:'monospace',fontSize:'.8rem'}
+        })
+      ),
+      parseErr&&React.createElement('div',{className:'alert alert-error'},parseErr),
+      parsed&&!parseErr&&React.createElement('div',null,
+        React.createElement('div',{className:'alert alert-success',style:{marginBottom:'1rem'}},
+          '✓ Parsed '+parsed.length+' students | Pass (≥'+targetPct+'%): '+countPass(parsed,targetPct)+' students | ',
+          React.createElement('button',{className:'btn btn-sm btn-success',style:{marginLeft:8},onClick:saveMarks},'Save & Calculate')
+        ),
+        React.createElement('div',{className:'marks-table'},
+          React.createElement('table',null,
+            React.createElement('thead',null,React.createElement('tr',null,
+              ['Roll No','Student Name','Max Marks','Marks Obtained','%','Status'].map(h=>React.createElement('th',{key:h},h))
+            )),
+            React.createElement('tbody',null,
+              parsed.slice(0,20).map((row,i)=>React.createElement('tr',{key:i},
+                React.createElement('td',null,row.roll),
+                React.createElement('td',null,row.name),
+                React.createElement('td',{style:{textAlign:'center'}},row.max),
+                React.createElement('td',{style:{textAlign:'center'}},row.marks),
+                React.createElement('td',{style:{textAlign:'center',fontWeight:500}},row.pct.toFixed(1)+'%'),
+                React.createElement('td',null,row.pct>=targetPct
+                  ? React.createElement('span',{className:'badge badge-green'},'Pass')
+                  : React.createElement('span',{className:'badge badge-red'},'Fail'))
+              )),
+              parsed.length>20&&React.createElement('tr',null,
+                React.createElement('td',{colSpan:6,style:{textAlign:'center',color:'#94a3b8',padding:'.5rem'}},
+                  '...and '+(parsed.length-20)+' more students')
+              )
+            )
+          )
+        )
+      ),
+      /* Show stored data preview if no new upload */
+      !parsed&&hasData&&React.createElement('div',null,
+        React.createElement('div',{style:{marginBottom:8,fontSize:'.82rem',fontWeight:500,color:'#475569'}},'Stored marks ('+storedRows.length+' students)'),
+        React.createElement('div',{className:'marks-table'},
+          React.createElement('table',null,
+            React.createElement('thead',null,React.createElement('tr',null,
+              ['Roll No','Name','Max','Marks','%','Status'].map(h=>React.createElement('th',{key:h},h))
+            )),
+            React.createElement('tbody',null,
+              storedRows.slice(0,10).map((row,i)=>React.createElement('tr',{key:i},
+                React.createElement('td',null,row.roll),
+                React.createElement('td',null,row.name),
+                React.createElement('td',{style:{textAlign:'center'}},row.max),
+                React.createElement('td',{style:{textAlign:'center'}},row.marks),
+                React.createElement('td',{style:{textAlign:'center'}},row.pct.toFixed(1)+'%'),
+                React.createElement('td',null,row.pct>=targetPct
+                  ?React.createElement('span',{className:'badge badge-green'},'Pass')
+                  :React.createElement('span',{className:'badge badge-red'},'Fail'))
+              )),
+              storedRows.length>10&&React.createElement('tr',null,
+                React.createElement('td',{colSpan:6,style:{textAlign:'center',color:'#94a3b8',padding:'.5rem'}},
+                  '...and '+(storedRows.length-10)+' more'))
+            )
+          )
+        )
+      )
+    ),
+    showWeights&&React.createElement(COWeightModal,{
+      cos,evalKey,evalLabel,weights,
+      onSave:(w)=>{onSaveWeights(evalKey,w);setShowWeights(false);flash('CO weights saved for '+evalLabel);},
+      onClose:()=>setShowWeights(false)
+    })
+  );
+}
+
+/* CO Attainment Summary from marks */
+function COAttainmentSummary({cos,courseId,marksData,weightsData,surveyData,targetPct,N,save,db,flash}){
+  /* For each CO, for each eval: weighted pass count */
+  const computeCOData=(co)=>{
+    const results={};
+    EVALS.forEach(ev=>{
+      const rows=marksData[courseId+'_'+ev.key]||[];
+      const weights=weightsData[courseId+'_'+ev.key]||{};
+      const w=parseFloat(weights[co.id])||0;
+      if(!rows.length||!w) return;
+      const pass=countPass(rows,targetPct);
+      const totalN=rows.length;
+      results[ev.key]={pass,totalN,pct:(pass/totalN)*100,weight:w};
+    });
+    return results;
+  };
+
+  const lc=(l)=>l===3?'level-high':l===2?'level-mid':l===1?'level-low':'text-muted';
+
+  /* Build attainment for each CO weighted across evaluations */
+  const coResults=cos.map(co=>{
+    const evData=computeCOData(co);
+    /* CIA: CT1, CT2, Assign — weighted average of levels */
+    const ciaEvals=['ct1','ct2','assign'];
+    const ciaItems=ciaEvals.map(k=>{
+      const d=evData[k];
+      if(!d) return null;
+      return{level:attLevel(d.pct),pct:d.pct,w:d.weight};
+    }).filter(Boolean);
+
+    const eseData=evData['ese'];
+
+    if(!ciaItems.length&&!eseData) return{co,coa:null,detail:{}};
+
+    /* level for each */
+    const levels={};
+    ['ct1','ct2','assign'].forEach(k=>{if(evData[k])levels[k]=attLevel(evData[k].pct);});
+    if(eseData) levels['ese']=attLevel(eseData.pct);
+
+    const CIA=ciaItems.length?ciaItems.reduce((s,x)=>s+x.level,0)/ciaItems.length:0;
+    const ESELevel=levels['ese']||0;
+    const DA=ciaItems.length&&eseData ? 0.4*CIA+0.6*ESELevel : (ciaItems.length?CIA:ESELevel);
+    const survey=surveyData[co.id]||0;
+    const COA=survey>0?0.8*DA+0.2*survey:DA;
+
+    return{co,coa:COA,CIA,DA,IA:survey,levels,evData};
+  });
+
+  /* Save computed attainment back to db for PDF */
+  const saveAttainment=()=>{
+    const newAtt={...db.attainmentData||{}};
+    coResults.forEach(({co,coa,CIA,DA,IA,levels,evData})=>{
+      if(coa===null) return;
+      const eseD=evData&&evData['ese'];
+      newAtt[courseId+'_'+co.id]={
+        cia1_p: evData&&evData['ct1']?evData['ct1'].pass:'',
+        cia2_p: evData&&evData['ct2']?evData['ct2'].pass:'',
+        assign_p: evData&&evData['assign']?evData['assign'].pass:'',
+        ese_p: eseD?eseD.pass:'',
+        survey: IA,
+        _coa: coa
+      };
+    });
+    save({...db,attainmentData:newAtt});
+    flash('CO Attainment saved successfully!');
+  };
+
+  const anyResult=coResults.some(r=>r.coa!==null);
+
+  return React.createElement('div',{className:'card',style:{marginTop:'1.25rem'}},
+    React.createElement('div',{className:'card-header'},
+      React.createElement('h3',null,'CO Attainment Summary (Auto-Calculated)'),
+      anyResult&&React.createElement('button',{className:'btn btn-sm btn-success',onClick:saveAttainment},'Save Attainment')
+    ),
+    React.createElement('div',{style:{overflowX:'auto'}},
+      React.createElement('table',null,
+        React.createElement('thead',null,React.createElement('tr',null,
+          ['CO','Description',
+           'CT-1 Pass%','a',
+           'CT-2 Pass%','b',
+           'Assign Pass%','e',
+           'ESE Pass%','c',
+           'Exit Survey','CIA','DA','COA'
+          ].map(h=>React.createElement('th',{key:h,style:{textAlign:'center',fontSize:'.72rem'}},h))
+        )),
+        React.createElement('tbody',null,
+          coResults.map(({co,coa,CIA,DA,IA,levels,evData})=>{
+            const na=React.createElement('td',{style:{textAlign:'center',color:'#ccc'}},'—');
+            const ct1d=evData&&evData['ct1'];
+            const ct2d=evData&&evData['ct2'];
+            const asd=evData&&evData['assign'];
+            const esed=evData&&evData['ese'];
+            return React.createElement('tr',{key:co.id},
+              React.createElement('td',null,React.createElement('span',{className:'badge badge-teal'},co.label)),
+              React.createElement('td',{style:{fontSize:'.8rem',maxWidth:180}},co.desc),
+              ct1d?React.createElement('td',{style:{textAlign:'center'}},ct1d.pct.toFixed(1)+'%'):na,
+              ct1d?React.createElement('td',{style:{textAlign:'center'},className:lc(levels['ct1'])},levels['ct1']||'0'):na,
+              ct2d?React.createElement('td',{style:{textAlign:'center'}},ct2d.pct.toFixed(1)+'%'):na,
+              ct2d?React.createElement('td',{style:{textAlign:'center'},className:lc(levels['ct2'])},levels['ct2']||'0'):na,
+              asd?React.createElement('td',{style:{textAlign:'center'}},asd.pct.toFixed(1)+'%'):na,
+              asd?React.createElement('td',{style:{textAlign:'center'},className:lc(levels['assign'])},levels['assign']||'0'):na,
+              esed?React.createElement('td',{style:{textAlign:'center'}},esed.pct.toFixed(1)+'%'):na,
+              esed?React.createElement('td',{style:{textAlign:'center'},className:lc(levels['ese'])},levels['ese']||'0'):na,
+              React.createElement('td',{style:{textAlign:'center'}},
+                React.createElement('select',{value:IA||0,
+                  onChange:e=>{
+                    const newSurvey={...(db.surveyData||{}),[courseId+'_'+co.id]:parseInt(e.target.value)||0};
+                    save({...db,surveyData:newSurvey});
+                  },
+                  style:{padding:'2px 4px',border:'1.5px solid var(--border)',borderRadius:4,fontSize:'.78rem',background:'#fff'}
+                },
+                  React.createElement('option',{value:0},'—'),
+                  [1,2,3].map(v=>React.createElement('option',{key:v,value:v},v))
+                )
+              ),
+              React.createElement('td',{style:{textAlign:'center',fontWeight:500}},coa!==null&&CIA!==undefined?CIA.toFixed(2):'—'),
+              React.createElement('td',{style:{textAlign:'center',fontWeight:500}},coa!==null&&DA!==undefined?DA.toFixed(2):'—'),
+              React.createElement('td',{style:{textAlign:'center',fontWeight:700,
+                color:coa===null?'#ccc':coa>=2.5?'#16a34a':coa>=1.5?'#d97706':'#dc2626'}},
+                coa!==null?coa.toFixed(2):'—')
+            );
+          })
+        )
+      )
+    ),
+    React.createElement('div',{style:{padding:'1rem',fontSize:'.78rem',color:'#64748b',borderTop:'1px solid var(--border)'}},
+      'Formula: CIA = avg of level(CT-1, CT-2, Assignments) | DA = 0.4×CIA + 0.6×ESE | COA = 0.8×DA + 0.2×Survey | Levels: 3 if >80%, 2 if >70%, 1 if >60%')
+  );
+}
+
 function AttainmentPage({user,db,save,flash}){
   const myCourses=db.courses.filter(c=>c.teacherId===user.id);
   const [cid,setCid]=useState(myCourses[0]?.id||'');
   const course=myCourses.find(c=>c.id===cid);
   const cos=course?(db.courseOutcomes[course.id]||[]):[];
   const N=course?.totalStudents||0;
-  const att=db.attainmentData||{};
-  const getD=(coId)=>att[course?.id+'_'+coId]||{cia1_p:'',cia2_p:'',assign_p:'',ese_p:'',survey:0};
-  const setD=(coId,field,val)=>{
-    const key=course.id+'_'+coId;
-    const cur=getD(coId);
-    const nv=field==='survey'?parseInt(val)||0:(val===''?'':parseInt(val)||0);
-    save({...db,attainmentData:{...att,[key]:{...cur,[field]:nv}}});
+  const TARGET=60; // pass target %
+
+  const marksData=db.marksData||{};
+  const weightsData=db.weightsData||{};
+  const surveyData={};
+  cos.forEach(co=>{
+    const key=cid+'_'+co.id;
+    surveyData[co.id]=(db.surveyData||{})[key]||0;
+  });
+
+  const onSaveMarks=(evalKey,rows)=>{
+    const key=cid+'_'+evalKey;
+    save({...db,marksData:{...marksData,[key]:rows}});
   };
-  const lc=(l)=>l===3?'level-high':l===2?'level-mid':l===1?'level-low':'text-muted';
+  const onSaveWeights=(evalKey,w)=>{
+    const key=cid+'_'+evalKey;
+    save({...db,weightsData:{...weightsData,[key]:w}});
+  };
+
   if(!myCourses.length) return React.createElement('div',{className:'card'},React.createElement('div',{className:'empty-state'},'No courses assigned.'));
+
   return React.createElement('div',null,
-    React.createElement('div',{className:'form-group',style:{maxWidth:300,marginBottom:'1rem'}},
-      React.createElement('select',{value:cid,onChange:e=>setCid(e.target.value)},
-        myCourses.map(c=>React.createElement('option',{key:c.id,value:c.id},c.code+' — '+c.name))
-      )
+    React.createElement('div',{style:{display:'flex',alignItems:'center',gap:'1rem',marginBottom:'1rem',flexWrap:'wrap'}},
+      React.createElement('div',{className:'form-group',style:{maxWidth:320,margin:0}},
+        React.createElement('select',{value:cid,onChange:e=>setCid(e.target.value)},
+          myCourses.map(c=>React.createElement('option',{key:c.id,value:c.id},c.code+' — '+c.name))
+        )
+      ),
+      React.createElement('span',{className:'text-sm text-muted'},'N = '+N+' | Pass target: '+TARGET+'% | Levels: 3→>80%, 2→>70%, 1→>60%')
     ),
     cos.length===0&&React.createElement('div',{className:'card'},React.createElement('div',{className:'empty-state'},'Define COs first in "My Courses".')),
     cos.length>0&&React.createElement('div',null,
+      /* Step 1: Upload marks per evaluation */
       React.createElement('div',{className:'card',style:{marginBottom:'1rem'}},
-        React.createElement('div',{className:'card-body'},
-          React.createElement('span',{className:'text-sm text-muted'},'Target: students scoring ≥60% | N = '+N+' | Levels: 3→>80%, 2→>70%, 1→>60% | CIA = avg(CT-1, CT-2, Assignments)')
+        React.createElement('div',{className:'card-header'},
+          React.createElement('h3',null,'Step 1 — Upload Student Marks (CSV) for Each Evaluation'),
+          React.createElement('button',{className:'btn btn-sm btn-secondary',
+            onClick:()=>{
+              const csv='roll_no,student_name,max_marks,marks_obtained\n2101001,Example Student,30,24';
+              const b=new Blob([csv],{type:'text/csv'});
+              const a=document.createElement('a');a.href=URL.createObjectURL(b);
+              a.download='marks_template.csv';a.click();
+              flash('Template downloaded!');
+            }},
+            '⬇ Download CSV Template')
+        ),
+        React.createElement('div',{className:'card-body',style:{paddingBottom:0}},
+          React.createElement('div',{style:{fontSize:'.82rem',color:'#64748b',marginBottom:'1rem'}},
+            'For each evaluation, upload a CSV file with student marks. Then set CO weightages to indicate which questions/marks belong to which CO.'
+          )
         )
       ),
-      cos.map(co=>{
-        const d=getD(co.id);
-        const r=calcCOA(d,N);
-        return React.createElement('div',{key:co.id,className:'card attainment-table',style:{marginBottom:'1rem'}},
-          React.createElement('div',{className:'card-header'},
-            React.createElement('div',null,
-              React.createElement('span',{className:'badge badge-teal',style:{marginRight:8}},co.label),
-              React.createElement('strong',null,co.desc)
-            ),
-            r&&React.createElement('span',{className:'badge '+(r.COA>=2.5?'badge-green':r.COA>=1.5?'badge-amber':'badge-red')},'COA: '+r.COA.toFixed(2))
-          ),
-          React.createElement('div',{style:{overflowX:'auto'}},
-            React.createElement('table',null,
-              React.createElement('thead',null,React.createElement('tr',null,
-                ['','CT-1 (Internal 1)','CT-2 (Internal 2)','Assignments (Internal 3)','ESE (End Semester)','Exit Survey (1-3)'].map(h=>React.createElement('th',{key:h},h))
-              )),
-              React.createElement('tbody',null,
-                React.createElement('tr',null,
-                  React.createElement('td',null,React.createElement('span',{className:'text-sm text-muted'},'No. of students scoring >60% (P)')),
-                  React.createElement('td',null,React.createElement('input',{type:'number',min:0,max:N,value:d.cia1_p,onChange:e=>setD(co.id,'cia1_p',e.target.value),placeholder:'P'})),
-                  React.createElement('td',null,React.createElement('input',{type:'number',min:0,max:N,value:d.cia2_p,onChange:e=>setD(co.id,'cia2_p',e.target.value),placeholder:'P'})),
-                  React.createElement('td',null,React.createElement('input',{type:'number',min:0,max:N,value:d.assign_p,onChange:e=>setD(co.id,'assign_p',e.target.value),placeholder:'P'})),
-                  React.createElement('td',null,React.createElement('input',{type:'number',min:0,max:N,value:d.ese_p,onChange:e=>setD(co.id,'ese_p',e.target.value),placeholder:'P'})),
-                  React.createElement('td',null,
-                    React.createElement('select',{value:d.survey||0,onChange:e=>setD(co.id,'survey',e.target.value),
-                      style:{padding:'.3rem .5rem',border:'1.5px solid var(--border)',borderRadius:6,fontFamily:'DM Sans, sans-serif',fontSize:'.85rem',background:'#fff'}},
-                      React.createElement('option',{value:0},'-- Select --'),
-                      [1,2,3].map(v=>React.createElement('option',{key:v,value:v},v===1?'1 - Low':v===2?'2 - Moderate':'3 - High'))
-                    )
-                  )
-                ),
-                r&&React.createElement('tr',{style:{background:'#f8fafc'}},
-                  React.createElement('td',null,React.createElement('strong',{style:{fontSize:'.8rem'}},'% Achieved / Level')),
-                  React.createElement('td',null,React.createElement('div',null,((d.cia1_p/N)*100).toFixed(1)+'%'),React.createElement('span',{className:lc(r.a)},'Level '+r.a)),
-                  React.createElement('td',null,React.createElement('div',null,((d.cia2_p/N)*100).toFixed(1)+'%'),React.createElement('span',{className:lc(r.b)},'Level '+r.b)),
-                  React.createElement('td',null,React.createElement('div',null,((d.assign_p/N)*100).toFixed(1)+'%'),React.createElement('span',{className:lc(r.e)},'Level '+r.e)),
-                  React.createElement('td',null,React.createElement('div',null,((d.ese_p/N)*100).toFixed(1)+'%'),React.createElement('span',{className:lc(r.c)},'Level '+r.c)),
-                  React.createElement('td',null,React.createElement('span',{className:lc(r.d)},'Level '+r.d))
-                ),
-                r&&React.createElement('tr',{style:{background:'#eff6ff',fontWeight:500}},
-                  React.createElement('td',{colSpan:2},'CIA = ('+r.a+'+'+r.b+'+'+r.e+')/3 = '+r.CIA.toFixed(2)),
-                  React.createElement('td',{colSpan:2},'DA = 0.4×'+r.CIA.toFixed(2)+' + 0.6×'+r.c+' = '+r.DA.toFixed(2)),
-                  React.createElement('td',{colSpan:2},'COA = 0.8×'+r.DA.toFixed(2)+' + 0.2×'+r.d+' = '+r.COA.toFixed(2))
-                )
-              )
-            )
-          )
-        );
+      EVALS.map(ev=>React.createElement(EvalUploadPanel,{
+        key:ev.key,
+        evalKey:ev.key,
+        evalLabel:ev.label,
+        cos,courseId:cid,
+        marksData,weightsData,
+        targetPct:TARGET,
+        onSaveMarks,onSaveWeights,flash,
+        db,save
+      })),
+      /* Step 2: Auto-calculated CO attainment */
+      React.createElement('div',{className:'card',style:{marginBottom:'1rem',padding:'1rem',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius)'}},
+        React.createElement('h3',{style:{marginBottom:8,fontSize:'.95rem'}},'Step 2 — Set CO Weightages & View Results'),
+        React.createElement('p',{style:{fontSize:'.82rem',color:'#64748b'}},
+          'Click "CO Weights" on each evaluation above to define what % of that evaluation covers each CO. Then the table below auto-calculates CO Attainment.')
+      ),
+      React.createElement(COAttainmentSummary,{
+        cos,courseId:cid,marksData,weightsData,surveyData,
+        targetPct:TARGET,N,save,db,flash
       })
     )
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   TEACHER — EXPORT PDF
 /* ═══════════════════════════════════════════════════════════════
    TEACHER — EXPORT PDF
 ═══════════════════════════════════════════════════════════════ */
@@ -1223,7 +1586,7 @@ function ExportPage({user,db,flash}){
   const cos=course?(db.courseOutcomes[course.id]||[]):[];
   const mapping=course?(db.coPoMapping[course.id]||{}):{};
   const att=db.attainmentData||{};
-  const coaVals=cos.map(co=>{const d=att[course?.id+'_'+co.id]||{};const r=calcCOA(d,course?.totalStudents||0);return r?r.COA:null;}).filter(v=>v!==null);
+  const coaVals=cos.map(co=>{const d=att[course?.id+'_'+co.id]||{};if(d._coa!==undefined)return d._coa;const r=calcCOA(d,course?.totalStudents||0);return r?r.COA:null;}).filter(v=>v!==null);
   const avgCOA=coaVals.length?coaVals.reduce((s,v)=>s+v,0)/coaVals.length:0;
   const doExport=()=>{
     if(!course){flash('Select a course','error');return;}
@@ -1309,7 +1672,7 @@ function App(){
     {id:'dashboard',label:'Dashboard',icon:'home'},
     {id:'my-courses',label:'My Courses',icon:'courses'},
     {id:'co-po',label:'CO-PO Mapping',icon:'mapping'},
-    {id:'attainment',label:'CO Attainment',icon:'attainment'},
+    {id:'attainment',label:'Marks & Attainment',icon:'attainment'},
     {id:'export',label:'Export PDF',icon:'download'},
   ];
 
@@ -1322,7 +1685,7 @@ function App(){
     dashboard:'Dashboard',programs:'Programme Management',hods:'HOD Management',
     teachers:'Teacher Management',courses:'Course Management',import:'Bulk Import',
     reports:'PO/PSO Attainment Report','my-courses':'My Courses',
-    'co-po':'CO-PO Mapping',attainment:'CO Attainment Calculation',export:'Export Reports'
+    'co-po':'CO-PO Mapping',attainment:'Marks Upload & CO Attainment',export:'Export Reports'
   };
   const Comp=pageMap[page]||DashboardPage;
 
